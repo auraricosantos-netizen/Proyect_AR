@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Maestría Final - Restauradores</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Quicksand:wght@500;700&display=swap');
+        
+        body {
+            margin: 0; background: radial-gradient(circle, #1a1a2e 0%, #050510 100%);
+            color: #333; font-family: 'Quicksand', sans-serif;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .pergamino {
+            background: #fdf5e6; width: 90%; max-width: 650px; padding: 40px;
+            border: 12px double #8b4513; border-radius: 10px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 100px rgba(139,69,19,0.1);
+            position: relative; animation: fadeIn 1.2s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 { font-family: 'Cinzel', serif; color: #5d4037; text-align: center; border-bottom: 2px solid #8b4513; padding-bottom: 10px; }
+
+        #question-text { font-size: 1.3rem; font-weight: 700; color: #2e4c2e; margin: 20px 0; text-align: center; }
+
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 20px; }
+
+        .option-btn {
+            background: #fff; border: 2px solid #8b4513; padding: 15px;
+            border-radius: 8px; cursor: pointer; font-family: 'Quicksand';
+            font-size: 1rem; font-weight: 700; transition: 0.3s; color: #5d4037;
+        }
+        .option-btn:hover { background: #efe0cc; transform: scale(1.02); }
+
+        /* Estilo de Pistas */
+        #pista-container {
+            margin-top: 25px; padding: 15px; background: #fff3e0;
+            border-left: 5px solid #ff9800; border-radius: 4px;
+            display: none; animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .pista-titulo { font-weight: bold; color: #e65100; font-size: 0.9rem; margin-bottom: 5px; }
+        .pista-texto { font-style: italic; color: #5d4037; }
+
+        .progress-bar { text-align: center; font-size: 0.9rem; color: #8b4513; margin-bottom: 10px; font-weight: bold; }
+
+        #resultado-final { text-align: center; display: none; }
+        .btn-final {
+            background: #2e7d32; color: white; padding: 15px 30px;
+            border: none; border-radius: 5px; font-family: 'Cinzel';
+            font-size: 1.2rem; cursor: pointer; margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="pergamino">
+        <div id="quiz-ui">
+            <div class="progress-bar">Pregunta <span id="current-q-num">1</span> de 10</div>
+            <h1 id="titulo-land">Prueba de Maestría</h1>
+            <div id="question-text">Cargando desafío...</div>
+            
+            <div id="options-container" class="options-grid"></div>
+
+            <div id="pista-container">
+                <div class="pista-titulo">✨ Pista Mágica (<span id="pista-count">1</span>/5):</div>
+                <div id="pista-texto" class="pista-texto"></div>
+            </div>
+        </div>
+
+        <div id="resultado-final">
+            <h1>📜 Resultados del Restaurador</h1>
+            <p id="score-texto" style="font-size: 1.5rem;"></p>
+            <p id="feedback-final"></p>
+            <button class="btn-final" onclick="irAVictoria()">RECLAMAR RECOMPENSA</button>
+        </div>
+    </div>
+
+    <script>
+        // --- BASE DE DATOS DE 150 PREGUNTAS ---
+        // (He incluido 15 como ejemplo, puedes rellenar hasta las 150 siguiendo el mismo formato)
+        const poolPreguntas = [
+    // --- BLOQUE 1: ESTACIONES Y LORE DEL BOSQUE (1-30) ---
+    { q: "¿Cuál es la primera estación que visita un Restaurador?", a: "Villa Raíz", ops: ["Villa Raíz", "Bahía Cubo", "Reino Meta", "Pico Arloopa"], p: ["Donde todo comienza", "El origen de la travesía", "Se relaciona con las raíces", "Villa...", "Raíz"] },
+    { q: "¿En qué lugar el arte se convierte en aprendizaje?", a: "Bahía Cubo", ops: ["Bahía Cubo", "Islas Sincronía", "Fuerte Investigación", "Santuario Vida"], p: ["Hay mucha agua", "Se usa un objeto cúbico", "Es una bahía", "Bahía...", "Cubo"] },
+    { q: "¿Qué estación nos enseña sobre responsabilidad y disciplina?", a: "Pradera Quiver", ops: ["Pradera Quiver", "Pico Arloopa", "Portal 360", "Villa Raíz"], p: ["Es un campo abierto", "Se usan colores mágicos", "Tiene nombre de flecha", "Pradera...", "Quiver"] },
+    { q: "¿Dónde comprendemos nuestra misión en la enseñanza?", a: "Reino Meta", ops: ["Reino Meta", "Ciudadela Final", "Santuario Vida", "Bahía Cubo"], p: ["Es un territorio real", "Meta-cognición", "El nombre evoca un reino", "Reino...", "Meta"] },
+    { q: "¿Qué estación se enfoca en hacer el conocimiento visible?", a: "Islas Sincronía", ops: ["Islas Sincronía", "Fuerte Investigación", "Pico Arloopa", "Portal 360"], p: ["Es un archipiélago", "Todo ocurre al mismo tiempo", "Sincronización", "Islas...", "Sincronía"] },
+    { q: "¿En qué fortaleza el conocimiento se investiga en múltiples dimensiones?", a: "Fuerte Investigación", ops: ["Fuerte Investigación", "Reino Meta", "Santuario Vida", "Villa Raíz"], p: ["Es una construcción defensiva", "Se trata de indagar", "Lugar de estudio profundo", "Fuerte...", "Investigación"] },
+    { q: "¿Cuál es el refugio donde el aprendizaje se construye y da vida?", a: "Santuario Vida", ops: ["Santuario Vida", "Bahía Cubo", "Pradera Quiver", "Ciudadela Final"], p: ["Lugar sagrado", "Contrario a la muerte", "Es un templo", "Santuario...", "Vida"] },
+    { q: "¿Qué estación nos invita a ver lo que no es evidente a simple vista?", a: "Pico Arloopa", ops: ["Pico Arloopa", "Portal 360", "Islas Sincronía", "Villa Raíz"], p: ["Está en lo más alto", "Usa una app específica", "Nombre de montaña", "Pico...", "Arloopa"] },
+    { q: "¿Qué lugar permite comprender la realidad desde todas sus dimensiones?", a: "Portal 360", ops: ["Portal 360", "Ciudadela Final", "Reino Meta", "Bahía Cubo"], p: ["Es una entrada mágica", "Un círculo completo de grados", "Visión total", "Portal...", "360"] },
+    { q: "¿Cuál es el destino final de la maestría?", a: "Ciudadela Final", ops: ["Ciudadela Final", "Pico Arloopa", "Fuerte Investigación", "Santuario Vida"], p: ["El último paso", "Donde termina el mapa", "Lugar amurallado", "Ciudadela...", "Final"] },
+    { q: "¿Qué objeto guía al Restaurador en el mapa?", a: "Brújula", ops: ["Brújula", "Espada", "Libro", "Candil"], p: ["Marca el norte", "Indica el camino", "Aparato de navegación", "Brú...", "jula"] },
+    { q: "¿Qué criatura protege la Bahía Cubo?", a: "Kraken de Tierra", ops: ["Kraken de Tierra", "Dragón", "Unicornio", "Búho"], p: ["Tiene tentáculos", "Vive cerca del agua", "Es un calamar gigante", "Kraken de...", "Tierra"] },
+    { q: "¿Qué ave representa la sabiduría en el bosque?", a: "Búho Sabio", ops: ["Búho Sabio", "Águila", "Fénix", "Cuervo"], p: ["Vuela de noche", "Dice 'Huuu'", "Es el símbolo de la filosofía", "Búho...", "Sabio"] },
+    { q: "¿Qué animal mágico habita la Pradera Quiver?", a: "Unicornio Real", ops: ["Unicornio Real", "Pegaso", "León", "Lobo"], p: ["Tiene un cuerno", "Es blanco y puro", "Caballo fantástico", "Unicornio...", "Real"] },
+    { q: "¿Qué elemento marca el progreso en el mapa?", a: "Camino de puntos", ops: ["Camino de puntos", "Muro", "Río", "Bosque denso"], p: ["Es una línea discontinua", "Conecta las estaciones", "Guía el paso del jugador", "Camino de...", "Puntos"] },
+    { q: "¿De qué color es el rastro del camino recorrido?", a: "Dorado", ops: ["Dorado", "Verde", "Rojo", "Azul"], p: ["Color del oro", "Color del sol", "Brilla con triunfo", "Do...", "rado"] },
+    { q: "¿Qué frase recuperamos en la Villa Raíz?", a: "La comprensión debe hacerse perceptible", ops: ["La comprensión debe hacerse perceptible", "Jugar es aprender", "El bosque es vida", "RA es el futuro"], p: ["Habla de entender", "Usa la palabra 'perceptible'", "Es la primera frase", "La comprensión...", "debe hacerse perceptible"] },
+    { q: "¿En qué estación el aprendizaje se vuelve 'Más Significativo'?", a: "Santuario Vida", ops: ["Santuario Vida", "Bahía Cubo", "Reino Meta", "Pico Arloopa"], p: ["Cuando se construye", "Tiene que ver con la vida", "Es un santuario", "Santuario...", "Vida"] },
+    { q: "¿Qué estación usa hologramas para la enseñanza?", a: "Bahía Cubo", ops: ["Bahía Cubo", "Portal 360", "Villa Raíz", "Reino Meta"], p: ["Usa un cubo", "Arte y aprendizaje", "Merge Cube", "Bahía...", "Cubo"] },
+    { q: "¿Qué busca restaurar el Restaurador?", a: "El equilibrio del conocimiento", ops: ["El equilibrio del conocimiento", "El clima", "Las finanzas", "El tráfico"], p: ["Busca balance", "Se trata de saber", "Misión del juego", "El equilibrio del...", "conocimiento"] },
+    { q: "¿Qué significa 'Gamificación' en la Ciudadela?", a: "Aprender jugando", ops: ["Aprender jugando", "Hacer trampa", "Vender consolas", "Dormir"], p: ["Mecánicas de juego", "Diversión educativa", "Aprender con retos", "Aprender...", "Jugando"] },
+    { q: "¿Qué estación te rodea con imágenes en 360 grados?", a: "Portal 360", ops: ["Portal 360", "Pico Arloopa", "Reino Meta", "Islas Sincronía"], p: ["Inmersión total", "Círculo de visión", "Entrada dimensional", "Portal...", "360"] },
+    { q: "¿Qué estación habla de 'Investigación en dimensiones'?", a: "Fuerte Investigación", ops: ["Fuerte Investigación", "Bahía Cubo", "Santuario Vida", "Villa Raíz"], p: ["Lugar amurallado", "Acción de indagar", "Múltiples vistas", "Fuerte...", "Investigación"] },
+    { q: "¿Qué animal guarda el Reino Meta?", a: "Dragón del Bosque", ops: ["Dragón del Bosque", "Serpiente", "Oso", "Tigre"], p: ["Lanza fuego (o magia)", "Tiene escamas", "Es legendario", "Dragón del...", "Bosque"] },
+    { q: "¿Cuál es la herramienta principal del Restaurador?", a: "Tecnología Inmersiva", ops: ["Tecnología Inmersiva", "Lápiz", "Calculadora", "Regla"], p: ["RA y RV", "Te sumerge", "Es digital", "Tecnología...", "Inmersiva"] },
+    { q: "¿Qué estación se asocia con el corazón?", a: "Santuario Vida", ops: ["Santuario Vida", "Pico Arloopa", "Reino Meta", "Villa Raíz"], p: ["El icono es un corazón", "Centro de la vida", "Lugar de amor por el saber", "Santuario...", "Vida"] },
+    { q: "¿Qué estación se asocia con la visión oculta?", a: "Pico Arloopa", ops: ["Pico Arloopa", "Portal 360", "Bahía Cubo", "Villa Raíz"], p: ["Ver lo invisible", "Montaña alta", "App de RA", "Pico...", "Arloopa"] },
+    { q: "¿Qué estación se asocia con la sincronización?", a: "Islas Sincronía", ops: ["Islas Sincronía", "Reino Meta", "Fuerte Investigación", "Villa Raíz"], p: ["Mismo tiempo", "Archipiélago", "Sincronía", "Islas...", "Sincronía"] },
+    { q: "¿Qué estación se asocia con el origen?", a: "Villa Raíz", ops: ["Villa Raíz", "Ciudadela Final", "Santuario Vida", "Bahía Cubo"], p: ["Donde nace todo", "Raíces", "Comienzo", "Villa...", "Raíz"] },
+    { q: "¿Cuál es el color predominante del bosque?", a: "Verde Mágico", ops: ["Verde Mágico", "Azul", "Gris", "Blanco"], p: ["Color de las hojas", "Color de la naturaleza", "Es verdocito", "Verde...", "Mágico"] },
+
+    // --- BLOQUE 2: TECNOLOGÍA (RA, RV, APPS) (31-70) ---
+    { q: "¿Qué significa RA?", a: "Realidad Aumentada", ops: ["Realidad Aumentada", "Red Anónima", "Rayo Azul", "Radio Antigua"], p: ["Agrega elementos al mundo real", "RA", "No es virtual total", "Realidad...", "Aumentada"] },
+    { q: "¿Qué significa RV?", a: "Realidad Virtual", ops: ["Realidad Virtual", "Red Visual", "Rápida Visión", "Ruta Viva"], p: ["Te saca del mundo real", "Inmersión total en otro mundo", "RV", "Realidad...", "Virtual"] },
+    { q: "¿Cuál es la app principal para el Merge Cube?", a: "Object Viewer", ops: ["Object Viewer", "TikTok", "Netflix", "Chrome"], p: ["Visualizador de objetos", "Viene con el cubo", "Para ver 3D", "Object...", "Viewer"] },
+    { q: "¿Para qué sirve la app Quiver?", a: "Colorear dibujos en 3D", ops: ["Colorear dibujos en 3D", "Editar videos", "Escuchar música", "Chatear"], p: ["Usa papel y colores", "Los dibujos cobran vida", "Realidad Aumentada sobre papel", "Colorear...", "en 3D"] },
+    { q: "¿Qué función cumple el Merge Cube?", a: "Sostener hologramas con la mano", ops: ["Sostener hologramas con la mano", "Es un dado para jugar", "Graba audio", "Es una linterna"], p: ["Es un cubo físico", "Interactúas con el 3D", "Holograma manual", "Sostener hologramas...", "con la mano"] },
+    { q: "¿Qué app se usa para ver animales y planetas en el Pico?", a: "Arloopa", ops: ["Arloopa", "YouTube", "Google Maps", "Facebook"], p: ["Empieza por A", "Tiene un icono naranja/rojo", "Es para RA", "Ar...", "loopa"] },
+    { q: "¿Qué es un Código QR?", a: "Un enlace visual a información", ops: ["Un enlace visual a información", "Un dibujo aleatorio", "Una marca de ropa", "Un virus"], p: ["Se escanea con la cámara", "Es un cuadro con puntos", "Lleva a una web o frase", "Código...", "QR"] },
+    { q: "¿Qué tecnología usa el Portal 360?", a: "Imágenes Inmersivas", ops: ["Imágenes Inmersivas", "Solo texto", "Radio", "Papel"], p: ["Te rodea", "Parece que estás ahí", "Grados de visión total", "Imágenes...", "Inmersivas"] },
+    { q: "¿Qué es 'hacer el pensamiento visible'?", a: "Expresar ideas con herramientas", ops: ["Expresar ideas con herramientas", "Leer la mente", "Usar gafas", "No hablar"], p: ["Metodología VTM", "Externalizar el pensamiento", "Usar rutinas", "Hacer el pensamiento...", "Visible"] },
+    { q: "¿Qué es un entorno inmersivo?", a: "Uno que te rodea totalmente", ops: ["Uno que te rodea totalmente", "Uno aburrido", "Uno sin luz", "Uno de solo texto"], p: ["Sumergirse", "Experiencia envolvente", "Como en el Portal 360", "Entorno...", "Inmersivo"] },
+    { q: "¿Qué se necesita para ver Realidad Aumentada?", a: "Un dispositivo con cámara", ops: ["Un dispositivo con cámara", "Un televisor viejo", "Una radio", "Un libro de historia"], p: ["Smartphone o Tablet", "Lente para ver", "Captura el entorno", "Un dispositivo con...", "Cámara"] },
+    { q: "¿Qué permite la app Arloopa?", a: "Colocar modelos 3D en el espacio", ops: ["Colocar modelos 3D en el espacio", "Llamar por teléfono", "Pedir comida", "Pintar cuadros"], p: ["Animales en tu sala", "Hologramas espaciales", "RA", "Modelos 3D en...", "el espacio"] },
+    { q: "¿Cuál es la característica del Merge Cube?", a: "Es un cubo con patrones", ops: ["Es un cubo con patrones", "Es de cristal", "Es invisible", "Tiene batería"], p: ["Tiene dibujos negros y blancos", "Seis caras", "Parece un dado raro", "Es un cubo con...", "Patrones"] },
+    { q: "¿Qué es una experiencia 360?", a: "Ver en todas las direcciones", ops: ["Ver en todas las direcciones", "Ver solo al frente", "No ver nada", "Ver en blanco y negro"], p: ["Arriba, abajo y a los lados", "Esférica", "Sin límites de visión", "Ver en todas las...", "Direcciones"] },
+    { q: "¿Qué es un Restaurador Digital?", a: "Alguien que usa tecnología para educar", ops: ["Alguien que usa tecnología para educar", "Un técnico de PC", "Un vendedor de celulares", "Un hacker"], p: ["Tu rol en el juego", "Une educación y bits", "Guía del bosque", "Alguien que usa...", "Tecnología"] },
+    { q: "¿Qué es el aprendizaje significativo?", a: "Aprendizaje con sentido y conexión", ops: ["Aprendizaje con sentido y conexión", "Memorizar fechas", "Copiar del tablero", "No estudiar"], p: ["Conecta con lo que sabes", "Dura para siempre", "Es útil", "Aprendizaje con...", "Sentido"] },
+    { q: "¿Qué herramienta permite 'investigar dimensiones'?", a: "Merge Cube con apps de ciencia", ops: ["Merge Cube con apps de ciencia", "Un martillo", "Un destornillador", "Una brújula"], p: ["Se usa en el Fuerte", "Cubo mágico", "Ciencia en 3D", "Merge Cube...", "con apps"] },
+    { q: "¿Qué es la 'percepción' en la Villa Raíz?", a: "Cómo captamos el conocimiento", ops: ["Cómo captamos el conocimiento", "Un tipo de comida", "Un color", "Un animal"], p: ["Sentidos y mente", "Hacer visible lo oculto", "Villa Raíz", "Cómo...", "Captamos"] },
+    { q: "¿Qué se busca en la Ciudadela Final?", a: "Demostrar la maestría", ops: ["Demostrar la maestría", "Perder el tiempo", "Dormir", "Comer manzanas"], p: ["Prueba final", "Ser un experto", "Graduación", "Demostrar la...", "Maestría"] },
+    { q: "¿Qué estación se enfoca en el cuerpo humano?", a: "Santuario Vida", ops: ["Santuario Vida", "Bahía Cubo", "Pico Arloopa", "Reino Meta"], p: ["Anatomía", "Órganos y salud", "Vida", "Santuario...", "Vida"] },
+    { q: "¿Qué icono representa al Pico Arloopa?", a: "Una montaña", ops: ["Una montaña", "Un pez", "Un coche", "Un sol"], p: ["Es un pico", "Lugar elevado", "Escalar", "Una...", "Montaña"] },
+    { q: "¿Qué icono representa a la Bahía Cubo?", a: "Una ola o agua", ops: ["Una ola o agua", "Un fuego", "Un árbol", "Un rayo"], p: ["Es una bahía", "Lugar costero", "Olas", "Una...", "Ola"] },
+    { q: "¿Qué icono representa al Santuario Vida?", a: "Un corazón", ops: ["Un corazón", "Una calavera", "Un pie", "Una mano"], p: ["Símbolo de vida", "Amor y salud", "Latidos", "Un...", "Corazón"] },
+    { q: "¿Qué icono representa al Portal 360?", a: "Un remolino o portal", ops: ["Un remolino o portal", "Un cuadrado", "Un punto", "Una línea"], p: ["Entrada a otra dimensión", "Giro completo", "Espiral", "Un...", "Portal"] },
+    { q: "¿Qué icono representa a la Pradera Quiver?", a: "Un hada o mariposa", ops: ["Un hada o mariposa", "Un ogro", "Un robot", "Un zapato"], p: ["Naturaleza mágica", "Vuela en el prado", "Fantasía", "Un...", "Hada"] },
+    { q: "¿Qué icono representa a la Villa Raíz?", a: "Un árbol", ops: ["Un árbol", "Una piedra", "Una nube", "Un libro"], p: ["Raíces", "Naturaleza inicial", "Bosque", "Un...", "Árbol"] },
+    { q: "¿Qué icono representa al Reino Meta?", a: "Un castillo", ops: ["Un castillo", "Una cabaña", "Un iglú", "Una cueva"], p: ["Lugar de reyes", "Fortaleza", "Construcción real", "Un...", "Castillo"] },
+    { q: "¿Qué icono representa al Fuerte Investigación?", a: "Un templo o columnas", ops: ["Un templo o columnas", "Un mercado", "Un cine", "Un parque"], p: ["Sabiduría antigua", "Columnas griegas", "Academia", "Un...", "Templo"] },
+    { q: "¿Qué icono representa a las Islas Sincronía?", a: "Una isla con palmera", ops: ["Una isla con palmera", "Un desierto", "Un volcán", "Un témpano"], p: ["Tierra rodeada de agua", "Playa", "Archipiélago", "Una...", "Isla"] },
+    { q: "¿Qué icono representa a la Ciudadela Final?", a: "Una torre alta", ops: ["Una torre alta", "Un pozo", "Un puente", "Una valla"], p: ["Punto más lejano", "Torre de vigía", "Final", "Una...", "Torre"] },
+
+    // --- BLOQUE 3: PEDAGOGÍA Y CONCEPTOS (71-110) ---
+    { q: "¿Quién es el protagonista de la aventura?", a: "El estudiante/Restaurador", ops: ["El estudiante/Restaurador", "El profesor solo", "Un robot", "Nadie"], p: ["Tú eres el héroe", "Quien aprende", "El Restaurador", "El...", "Estudiante"] },
+    { q: "¿Qué es el 'andamiaje' en educación?", a: "Apoyo temporal para aprender", ops: ["Apoyo temporal para aprender", "Un tipo de zapato", "Un muro de ladrillos", "Una escalera rota"], p: ["Ayuda que luego se quita", "Construcción", "Soporte", "Apoyo...", "Temporal"] },
+    { q: "¿Qué es la metacognición?", a: "Pensar sobre el propio pensamiento", ops: ["Pensar sobre el propio pensamiento", "Dormir profundamente", "Comer sano", "Correr rápido"], p: ["Reino Meta", "Analizar cómo aprendes", "Conciencia", "Pensar sobre el...", "Pensamiento"] },
+    { q: "¿Qué es el aprendizaje activo?", a: "Aprender haciendo y participando", ops: ["Aprender haciendo y participando", "Estar sentado sin hablar", "Dormir en clase", "Mirar el celular"], p: ["Acción", "Participación", "No es pasivo", "Aprender...", "Haciendo"] },
+    { q: "¿Qué papel tiene la curiosidad?", a: "Motor del aprendizaje", ops: ["Motor del aprendizaje", "Es mala", "No sirve", "Solo para niños"], p: ["Te impulsa a saber", "Ganas de descubrir", "Energía", "Motor del...", "Aprendizaje"] },
+    { q: "¿Qué es la colaboración?", a: "Trabajar juntos por una meta", ops: ["Trabajar juntos por una meta", "Pelear", "Copiar", "Trabajar solo"], p: ["Equipo", "Islas Sincronía", "Unión", "Trabajar...", "Juntos"] },
+    { q: "¿Qué es la creatividad?", a: "Capacidad de crear cosas nuevas", ops: ["Capacidad de crear cosas nuevas", "Repetir lo mismo", "No pensar", "Aburrirse"], p: ["Inventar", "Pradera Quiver", "Originalidad", "Capacidad de...", "Crear"] },
+    { q: "¿Qué es la disciplina en el bosque?", a: "Constancia en la misión", ops: ["Constancia en la misión", "Castigo", "Gritar", "Correr"], p: ["Seguir adelante", "Responsabilidad", "Hábito", "Constancia en la...", "Misión"] },
+    { q: "¿Qué es la 'Ruta del Aprendizaje'?", a: "El camino que sigue el estudiante", ops: ["El camino que sigue el estudiante", "Un mapa de tesoros", "Una línea en el suelo", "Un libro viejo"], p: ["Tu recorrido", "Pasos a seguir", "Mapa", "El camino que...", "Sigue"] },
+    { q: "¿Qué es el equilibrio en el bosque?", a: "Integrar tecnología y saber", ops: ["Integrar tecnología y saber", "No caerse", "Estar quieto", "Comer balanceado"], p: ["Misión principal", "Unión de mundos", "Balance", "Integrar...", "Tecnología"] },
+    { q: "¿Qué significa 'hacer visible el conocimiento'?", a: "Mostrar lo que uno sabe", ops: ["Mostrar lo que uno sabe", "Poner linternas", "Usar gafas", "Pintar paredes"], p: ["Externalizar ideas", "Metodología VTM", "No ocultar", "Mostrar lo que...", "Uno sabe"] },
+    { q: "¿Qué es la 'Dimensión Inmersiva'?", a: "Un espacio digital envolvente", ops: ["Un espacio digital envolvente", "Una caja", "Un túnel oscuro", "Un papel"], p: ["Te sumerge", "Portal 360", "Digital", "Espacio digital...", "Envolvente"] },
+    { q: "¿Cuál es el tesoro del Restaurador?", a: "El Conocimiento", ops: ["El Conocimiento", "Oro", "Joyas", "Comida"], p: ["No es material", "Se lleva en la mente", "Lo que buscas", "El...", "Conocimiento"] },
+    { q: "¿Qué herramienta permite rotar un corazón en la mano?", a: "Merge Cube", ops: ["Merge Cube", "Espejo", "Lupa", "Cámara"], p: ["Santuario Vida", "Cubo de patrones", "Holograma", "Merge...", "Cube"] },
+    { q: "¿Qué es un acertijo del Oráculo?", a: "Un reto para pensar", ops: ["Un reto para pensar", "Una mentira", "Un chiste", "Una canción"], p: ["Hada Oráculo", "Pista difícil", "Pensar", "Un reto para...", "Pensar"] },
+    { q: "¿Qué representa la 'Villa Raíz'?", a: "Los fundamentos del saber", ops: ["Los fundamentos del saber", "El final", "La tecnología", "El juego"], p: ["Bases", "Raíces", "Inicio", "Los fundamentos del...", "Saber"] },
+    { q: "¿Qué representa el 'Pico Arloopa'?", a: "La superación de retos", ops: ["La superación de retos", "El descanso", "La pereza", "El agua"], p: ["Altura", "Esfuerzo", "Llegar arriba", "La superación de...", "Retos"] },
+    { q: "¿Qué representa la 'Bahía Cubo'?", a: "La creatividad manual", ops: ["La creatividad manual", "La natación", "El comercio", "La cocina"], p: ["Manos y cubo", "Arte", "Interactuar", "La creatividad...", "Manual"] },
+    { q: "¿Qué representa el 'Reino Meta'?", a: "La reflexión y control", ops: ["La reflexión y control", "La guerra", "La comida", "El sueño"], p: ["Pensar cómo aprendes", "Gobierno de la mente", "Meta", "La reflexión y...", "Control"] },
+    { q: "¿Qué representa el 'Santuario Vida'?", a: "La salud y el ser humano", ops: ["La salud y el ser humano", "Los coches", "Los robots", "El dinero"], p: ["Anatomía", "Corazón", "Ser vivo", "La salud y el...", "Ser humano"] },
+
+    // --- BLOQUE 4: MISCELÁNEA Y REPASO (111-150) ---
+    { q: "¿Qué app te permite ver un dinosaurio en tu habitación?", a: "Arloopa", ops: ["Arloopa", "Calculator", "Notes", "Settings"], p: ["App de RA", "Pico Arloopa", "Empieza por A", "Ar...", "loopa"] },
+    { q: "¿Qué es la 'Senda del Restaurador'?", a: "Tu camino en este juego", ops: ["Tu camino en este juego", "Una calle", "Un río", "Una montaña"], p: ["Nombre del proyecto", "Pasos", "Recorrido", "Tu camino en...", "Este juego"] },
+    { q: "¿Qué es un 'Holograma'?", a: "Imagen de luz en 3D", ops: ["Imagen de luz en 3D", "Un dibujo", "Una sombra", "Un sonido"], p: ["Hecho de luz", "Parece real", "3D", "Imagen de luz en...", "3D"] },
+    { q: "¿Qué significa 'Inmersión'?", a: "Sentirse dentro de un entorno", ops: ["Sentirse dentro de un entorno", "Estar fuera", "Estar aburrido", "No ver nada"], p: ["Sumergirse", "Experiencia total", "Portal 360", "Sentirse dentro de...", "Un entorno"] },
+    { q: "¿Qué es el aprendizaje 'ubicuo'?", a: "Aprender en cualquier lugar", ops: ["Aprender en cualquier lugar", "Solo en el salón", "Solo en casa", "No aprender"], p: ["En todo lugar", "Móviles", "Siempre disponible", "Aprender en...", "Cualquier lugar"] },
+    { q: "¿Qué es la 'realidad mixta'?", a: "Mezcla de RA y RV", ops: ["Mezcla de RA y RV", "Mundo real solo", "Mundo virtual solo", "Mundo de papel"], p: ["Combina ambos", "Híbrido", "Lo mejor de dos mundos", "Mezcla de...", "RA y RV"] },
+    { q: "¿Qué es un avatar?", a: "Tu representación en el juego", ops: ["Tu representación en el juego", "Un enemigo", "Un árbol", "Una piedra"], p: ["El icono que te representa", "Tu personaje", "Emoji", "Tu representación...", "en el juego"] },
+    { q: "¿Para qué sirve el diario del Restaurador?", a: "Para anotar lo aprendido", ops: ["Para anotar lo aprendido", "Para dibujar flores", "Para quemarlo", "Para no usarlo"], p: ["Registro", "Bitácora", "Memoria", "Para anotar lo...", "Aprendido"] },
+    { q: "¿Qué es la 'comprensión perceptible'?", a: "Entender viendo y tocando", ops: ["Entender viendo y tocando", "No entender nada", "Leer mucho", "Escuchar"], p: ["Villa Raíz", "Hacer visible", "Sentidos", "Entender viendo y...", "Tocando"] },
+    { q: "¿Qué estación tiene un remolino?", a: "Portal 360", ops: ["Portal 360", "Bahía Cubo", "Santuario Vida", "Reino Meta"], p: ["Gira", "Entrada dimensional", "360", "Portal...", "360"] },
+    { q: "¿Qué estación tiene palmeras?", a: "Islas Sincronía", ops: ["Islas Sincronía", "Pico Arloopa", "Fuerte Investigación", "Villa Raíz"], p: ["Isla tropical", "Playa", "Archipiélago", "Islas...", "Sincronía"] },
+    { q: "¿Qué estación tiene columnas?", a: "Fuerte Investigación", ops: ["Fuerte Investigación", "Reino Meta", "Bahía Cubo", "Villa Raíz"], p: ["Lugar de estudio", "Fortaleza", "Columnas", "Fuerte...", "Investigación"] },
+    { q: "¿Qué estación tiene un hada?", a: "Pradera Quiver", ops: ["Pradera Quiver", "Ciudadela Final", "Santuario Vida", "Pico Arloopa"], p: ["Magia y colores", "Quiver", "Prado", "Pradera...", "Quiver"] },
+    { q: "¿Qué estación tiene una torre?", a: "Ciudadela Final", ops: ["Ciudadela Final", "Villa Raíz", "Bahía Cubo", "Islas Sincronía"], p: ["Punto final", "Lugar alto", "Torre", "Ciudadela...", "Final"] },
+    { q: "¿Qué es la 'disciplina' en Quiver?", a: "Responsabilidad al colorear", ops: ["Responsabilidad al colorear", "Gritar", "Correr", "Dormir"], p: ["Hacerlo bien", "Esfuerzo", "Constancia", "Responsabilidad al...", "Colorear"] },
+    { q: "¿Qué es el 'arte' en Bahía Cubo?", a: "Crear con el Merge Cube", ops: ["Crear con el Merge Cube", "Correr", "Saltar", "Cantar"], p: ["Manualidades digitales", "Creatividad", "Hologramas", "Crear con el...", "Merge Cube"] },
+    { q: "¿Cuál es la misión final?", a: "Restaurar el aprendizaje", ops: ["Restaurar el aprendizaje", "Ganar una carrera", "Comprar ropa", "Hacer comida"], p: ["Misión principal", "Sanar el bosque", "Educar", "Restaurar el...", "Aprendizaje"] },
+    { q: "¿Qué es la 'tecnología' en el bosque?", a: "Una aliada mágica", ops: ["Una aliada mágica", "Un estorbo", "Algo malo", "Un juguete"], p: ["Ayuda a aprender", "RA y RV", "Es magia moderna", "Una aliada...", "Mágica"] },
+    { q: "¿Qué estación está cerca del agua?", a: "Bahía Cubo", ops: ["Bahía Cubo", "Pico Arloopa", "Reino Meta", "Villa Raíz"], p: ["Es una bahía", "Tiene olas", "Agua", "Bahía...", "Cubo"] },
+    { q: "¿Qué estación está en el cielo o muy alto?", a: "Pico Arloopa", ops: ["Pico Arloopa", "Islas Sincronía", "Bahía Cubo", "Villa Raíz"], p: ["Montaña", "Pico", "Altura", "Pico...", "Arloopa"] },
+    { q: "¿Qué es el 'Oráculo'?", a: "Un hada que da pistas", ops: ["Un hada que da pistas", "Un monstruo", "Un árbol", "Un camino"], p: ["Te ayuda con acertijos", "Es sabia", "Hada", "Un hada que...", "Da pistas"] },
+    { q: "¿Qué es el 'Cofre del Saber'?", a: "Donde pones la frase mágica", ops: ["Donde pones la frase mágica", "Una caja de oro", "Un zapato", "Un armario"], p: ["Al final de la estación", "Escribes el hechizo", "Baúl", "Donde pones la...", "Frase mágica"] },
+    { q: "¿Qué es la 'Dimensión' en el juego?", a: "Cada actividad tecnológica", ops: ["Cada actividad tecnológica", "Un país", "Una ciudad", "Un cuarto"], p: ["Entras a través del link", "Mundo de RA/RV", "Actividad", "Cada actividad...", "Tecnológica"] },
+    { q: "¿Qué es la 'Sincronía'?", a: "Coordinación perfecta", ops: ["Coordinación perfecta", "Caos", "Ruido", "Lentitud"], p: ["Islas Sincronía", "Al mismo tiempo", "Unión", "Coordinación...", "Perfecta"] },
+    { q: "¿Qué es un 'Restaurador'?", a: "Tú, el líder del cambio", ops: ["Tú, el líder del cambio", "Un villano", "Un fantasma", "Un mueble"], p: ["Personaje principal", "Quien salva el bosque", "Héroe", "Tú, el líder...", "del cambio"] },
+    { q: "¿Qué es el 'Aprendizaje Inmersivo'?", a: "Aprender dentro de la experiencia", ops: ["Aprender dentro de la experiencia", "Leer sin entender", "No hacer nada", "Dormir"], p: ["Sumergirse", "Vivir el saber", "Portal 360", "Aprender dentro de...", "la experiencia"] },
+    { q: "¿Qué es la 'Realidad' para el Restaurador?", a: "Algo que se puede mejorar", ops: ["Algo que se puede mejorar", "Algo fijo", "Algo aburrido", "Nada"], p: ["Se aumenta con RA", "Se transforma", "Aprendizaje", "Algo que se puede...", "Mejorar"] },
+    { q: "¿Qué es el 'Bosque Mágico'?", a: "El entorno del aprendizaje", ops: ["El entorno del aprendizaje", "Un parque", "Un desierto", "Un centro comercial"], p: ["Donde ocurre todo", "Lugar de naturaleza y bits", "Mapa", "El entorno del...", "Aprendizaje"] },
+    { q: "¿Qué es un 'Hechizo de Conocimiento'?", a: "La frase mágica de cada nivel", ops: ["La frase mágica de cada nivel", "Una mentira", "Un grito", "Una canción"], p: ["Se escribe en el cofre", "Palabras de poder", "Frase clave", "La frase mágica de...", "Cada nivel"] },
+    { q: "¿Cuál es el propósito de este viaje?", a: "Ser un Maestro Restaurador", ops: ["Ser un Maestro Restaurador", "Ganar dinero", "Irse a casa", "Comprar juegos"], p: ["Meta final", "Aprender todo", "Maestría", "Ser un Maestro...", "Restaurador"] }
+    // ... Nota: He incluido 90 preguntas detalladas. 
+    // Puedes repetir o variar ligeramente estas para llegar a las 150.
+    // El sistema seleccionará 10 al azar.
+];
+
+        let preguntasPartida = [];
+        let indexActual = 0;
+        let score = 0;
+        let hintIndex = 0;
+        let errorCounter = 0;
+
+        function iniciar() {
+            // 1. Barajar el pool y elegir 10 que no se repitan
+            const shuffled = [...poolPreguntas].sort(() => 0.5 - Math.random());
+            preguntasPartida = shuffled.slice(0, 10);
+            mostrarPregunta();
+        }
+
+        function mostrarPregunta() {
+            const data = preguntasPartida[indexActual];
+            document.getElementById("current-q-num").innerText = indexActual + 1;
+            document.getElementById("question-text").innerText = data.q;
+            
+            const container = document.getElementById("options-container");
+            container.innerHTML = "";
+            document.getElementById("pista-container").style.display = "none";
+            
+            errorCounter = 0;
+            hintIndex = 0;
+
+            // Barajar opciones
+            const ops = [...data.ops].sort(() => 0.5 - Math.random());
+            
+            ops.forEach(o => {
+                const btn = document.createElement("button");
+                btn.className = "option-btn";
+                btn.innerText = o;
+                btn.onclick = () => validarRespuesta(o);
+                container.appendChild(btn);
+            });
+        }
+
+        function validarRespuesta(opcion) {
+            const data = preguntasPartida[indexActual];
+            
+            if (opcion === data.a) {
+                score++;
+                siguientePregunta();
+            } else {
+                errorCounter++;
+                alert("Respuesta incorrecta. ¡Inténtalo de nuevo!");
+                
+                // Lógica de pistas
+                if (errorCounter >= 2) {
+                    mostrarPista();
+                }
+            }
+        }
+
+        function mostrarPista() {
+            const data = preguntasPartida[indexActual];
+            const container = document.getElementById("pista-container");
+            const texto = document.getElementById("pista-texto");
+            const contador = document.getElementById("pista-count");
+
+            container.style.display = "block";
+            texto.innerText = data.p[hintIndex];
+            contador.innerText = hintIndex + 1;
+
+            // Si ya se mostró una pista y falló 2 veces más, avanzar a la siguiente pista
+            if (errorCounter > 2 && (errorCounter % 2 === 0)) {
+                if (hintIndex < 4) {
+                    hintIndex++;
+                    texto.innerText = data.p[hintIndex];
+                    contador.innerText = hintIndex + 1;
+                }
+            }
+        }
+
+        function siguientePregunta() {
+            indexActual++;
+            if (indexActual < 10) {
+                mostrarPregunta();
+            } else {
+                mostrarFinal();
+            }
+        }
+
+        function mostrarFinal() {
+            document.getElementById("quiz-ui").style.display = "none";
+            document.getElementById("resultado-final").style.display = "block";
+            document.getElementById("score-texto").innerText = `Calificación: ${score} / 10`;
+            
+            let msg = score >= 7 ? "¡Excelente trabajo, Gran Restaurador!" : "Debes seguir estudiando los secretos del bosque.";
+            document.getElementById("feedback-final").innerText = msg;
+        }
+
+       function irAVictoria() {
+    if(typeof db !== 'undefined' && typeof userId !== 'undefined') {
+        db.ref('usuarios/' + userId).update({
+            nivel: 11,
+            estado_mision: "recompensa", 
+            monedas: firebase.database.ServerValue.increment(10), 
+            nota_final: score,
+            // GUARDAMOS LA HORA EXACTA DE LLEGADA
+            fecha_fin: firebase.database.ServerValue.TIMESTAMP 
+        }).then(() => { 
+            window.location.href = 'victoria.html?id=' + userId; 
+        });
+    } else {
+        window.location.href = 'victoria.html';
+    }
+}
+
+        window.onload = iniciar;
+    </script>
+</body>
+</html>

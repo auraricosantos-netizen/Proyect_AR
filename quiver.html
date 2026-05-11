@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Dimensión Quiver - Restauradores</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script src="firebase-config.js"></script>
+
+<script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.1/nipplejs.min.js"></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Arial', sans-serif; background: #000; }
+        .ui-overlay { position: absolute; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        .instruccion-ra { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: gold; padding: 15px; border-radius: 30px; border: 2px solid gold; font-weight: bold; text-align: center; }
+        .btn-finalizar { position: absolute; bottom: 30px; right: 30px; padding: 15px 30px; background: #4a148c; color: white; border: 2px solid gold; border-radius: 50px; cursor: pointer; pointer-events: auto; font-weight: bold; transition: 0.3s; }
+        .btn-finalizar:hover { background: gold; color: #4a148c; }
+        
+        /* Contenedor del Joystick */
+        #joystick-container { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; pointer-events: auto; }
+        /* --- PANEL MÍSTICO DE QUIVER --- */
+#magic-panel-quiver {
+    position: fixed;
+    top: 0;
+    right: -400px; /* Escondido por defecto */
+    width: 350px;
+    height: 100%;
+    background: rgba(10, 30, 10, 0.9); /* Verde bosque profundo */
+    backdrop-filter: blur(15px);
+    border-left: 4px solid #ffd700;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px;
+    box-sizing: border-box;
+    transition: right 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1000;
+    color: white;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+}
+
+#magic-panel-quiver.active {
+    right: 0; /* Deslizar hacia adentro */
+}
+
+#magic-panel-quiver h2 {
+    font-family: 'Cinzel', serif;
+    color: #ffd700;
+    font-size: 1.8rem;
+    border-bottom: 2px solid #ffd700;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+#magic-panel-quiver p {
+    font-family: 'Quicksand', sans-serif;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    font-style: italic;
+}
+
+.glow-text {
+    color: #00ff41; /* Verde neón suave */
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    font-weight: bold;
+}
+    </style>
+</head>
+<body>
+
+    <div class="ui-overlay">
+        <div class="instruccion-ra">🖌️ Arrastra la pantalla para mirar. Usa el joystick para caminar.</div>
+        <div id="joystick-container"></div>
+        <button class="btn-finalizar" onclick="terminarMision()">FINALIZAR EXPLORACIÓN</button>
+    </div>
+<div id="magic-panel-quiver">
+    <h2>Dimensión Cromática</h2>
+    <p>
+        <span class="glow-text">QUIVER ES UN MUNDO MÁGICO QUE ESPERA A SER DESCUBIERTO:</span> 
+        Un lienzo infinito donde tus trazos cobran vida y el color es la llave que abre portales a dimensiones inexploradas. 
+        <br><br>
+        ¡Deja que tu creatividad restaure la realidad y devuelva la luz a la pradera!
+    </p>
+    <button onclick="document.getElementById('magic-panel-quiver').classList.remove('active')" 
+            style="margin-top:30px; background:none; border:1px solid #ffd700; color:#ffd700; cursor:pointer; padding:10px;">
+        ENTENDIDO
+    </button>
+</div>
+    <a-scene vr-mode-ui="enabled: false">
+        
+        <a-entity id="rig" position="0 1.6 0">
+            <a-camera id="camara-jugador" look-controls="enabled: true" wasd-controls="enabled: false"></a-camera>
+        </a-entity>
+
+        <a-entity position="0 1.5 -6">
+            <a-box position="-3 0 0" color="#FF1493" animation="property: rotation; to: 360 360 0; loop: true; dur: 5000"></a-box>
+            <a-sphere position="0 0 0" radius="1.2" color="#00FFFF" wireframe="true" animation="property: rotation; to: 0 360 0; loop: true; dur: 8000"></a-sphere>
+            <a-cone position="3 0 0" radius-bottom="1" height="2" color="#FFD700" animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 2000"></a-cone>
+        </a-entity>
+
+        <a-plane position="0 0 0" rotation="-90 0 0" width="50" height="50" color="#2a004d"></a-plane>
+        <a-sky color="#0a001a"></a-sky>
+        
+    </a-scene>
+
+    <script>
+        // Lógica de movimiento usando Nipple.js
+        let moveX = 0, moveZ = 0;
+        const rig = document.getElementById('rig');
+        const camara = document.getElementById('camara-jugador');
+
+        const manager = nipplejs.create({ 
+            zone: document.getElementById('joystick-container'), 
+            mode: 'static', 
+            position: {left: '60px', bottom: '60px'}, 
+            color: 'gold' 
+        });
+
+        // Detectar hacia dónde empujas el joystick
+        manager.on('move', (evt, data) => {
+            const speed = 0.10; // Velocidad al caminar
+            
+            // CORRECCIÓN 1: Ajuste de ejes del joystick
+            moveX = Math.cos(data.angle.radian) * speed;
+            moveZ = -Math.sin(data.angle.radian) * speed;
+        });
+
+        // Detener al soltar
+        manager.on('end', () => { 
+            moveX = 0; 
+            moveZ = 0; 
+        });
+
+        // Función que actualiza la cámara en tiempo real
+        function gameLoop() {
+            if (rig && (moveX !== 0 || moveZ !== 0)) {
+                // CORRECCIÓN 2: Obtener hacia dónde está mirando el jugador
+                const rotacion = camara.getAttribute('rotation');
+                const anguloRad = rotacion.y * (Math.PI / 180);
+
+                // Calcular el movimiento relativo a la cámara
+                const nuevoX = moveX * Math.cos(anguloRad) + moveZ * Math.sin(anguloRad);
+                const nuevoZ = moveZ * Math.cos(anguloRad) - moveX * Math.sin(anguloRad);
+
+                const pos = rig.getAttribute('position');
+                pos.x += nuevoX; 
+                pos.z += nuevoZ;
+                rig.setAttribute('position', pos);
+            }
+            requestAnimationFrame(gameLoop);
+        }
+        gameLoop(); // Iniciar el motor de movimiento
+
+        // Finalizar y guardar en Firebase
+        function terminarMision() {
+    const destino = (typeof userId !== 'undefined' && userId) ? 'laberinto.html?id=' + userId : 'laberinto.html';
+
+    if(typeof userId !== 'undefined' && userId) {
+        // 1. Consultamos en qué nivel vas
+        db.ref('usuarios/' + userId).once('value').then(snap => {
+            const data = snap.val();
+            const nivelActual = data.nivel || 3; // En Quiver deberías estar en el 3
+
+            // 2. Subimos al nivel 4 y reseteamos estado
+            db.ref('usuarios/' + userId).update({
+                nivel: nivelActual + 1,
+                monedas: firebase.database.ServerValue.increment(10),
+                estado_mision: "recompensa"
+            }).then(() => {
+                alert("¡ARTE DOMINADO! Has restaurado la Pradera Quiver. ¡Has ganado 10 monedas 🪙​!");
+                window.location.href = destino;
+            });
+        }).catch(err => {
+            console.error("Error al sincronizar:", err);
+            window.location.href = destino;
+        });
+    } else {
+        alert("Modo de prueba local.");
+        window.location.href = 'laberinto.html';
+    }
+}
+window.addEventListener('DOMContentLoaded', () => {
+    // Esperamos 1.5 segundos para que la escena cargue y luego mostramos el panel
+    setTimeout(() => {
+        const panel = document.getElementById('magic-panel-quiver');
+        panel.classList.add('active');
+    }, 1500);
+});
+    </script>
+</body>
+</html>

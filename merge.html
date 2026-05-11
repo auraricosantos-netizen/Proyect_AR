@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Sagrario de Investigación - El Origen del Cosmos</title>
+    
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <script src="firebase-config.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Quicksand:wght@400;700&display=swap');
+        
+        body { margin: 0; overflow: hidden; font-family: 'Orbitron', sans-serif; background-color: #f0f0f0; }
+
+        /* HUD Mensaje Inicial */
+        .header-ui {
+            position: fixed; top: 30px; width: 100%; text-align: center;
+            z-index: 100; pointer-events: none; color: #444;
+            letter-spacing: 2px; transition: opacity 1s;
+        }
+
+        /* Botón de Desbloqueo Final */
+        #btn-desbloqueo {
+            display: none; position: fixed; bottom: 50px; left: 50%;
+            transform: translateX(-50%); z-index: 500;
+            background: rgba(0, 0, 0, 0.8); color: #ffd700;
+            border: 2px solid #ffd700; padding: 15px 40px;
+            border-radius: 50px; cursor: pointer; font-family: 'Orbitron';
+            font-weight: bold; font-size: 1.1em; letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            animation: breathe 2s infinite;
+        }
+        #btn-desbloqueo:hover { background: #ffd700; color: #000; }
+
+        /* Modal de Sincronía */
+        #modal-sincronia {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(15px);
+            z-index: 2000; justify-content: center; align-items: center;
+        }
+
+        .card-final {
+            background: #fff; border: 3px solid #ffd700;
+            padding: 40px; border-radius: 30px; text-align: center;
+            max-width: 450px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        .box-frase {
+            margin: 20px 0; padding: 20px; border-radius: 15px;
+            background: #fff9c4; border-left: 5px solid #ffd700;
+            font-style: italic; font-weight: bold; color: #5d4037; font-family: 'Quicksand';
+        }
+
+        .btn-next {
+            background: #222; color: #ffd700; border: none; padding: 15px 40px;
+            border-radius: 50px; cursor: pointer; font-family: 'Orbitron'; font-weight: bold;
+        }
+
+        @keyframes breathe { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; transform: translateX(-50%) scale(1.05); } }
+    
+        #magic-panel-merge {
+    position: fixed;
+    top: 0;
+    right: -400px; /* Empieza oculto */
+    width: 350px;
+    height: 100%;
+    background: rgba(5, 5, 15, 0.95);
+    backdrop-filter: blur(15px);
+    border-left: 4px solid #ffd700;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px;
+    box-sizing: border-box;
+    transition: right 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1000;
+    color: white;
+}
+
+#magic-panel-merge.active {
+    right: 0; /* Se desliza al activarse */
+}
+
+#magic-panel-merge h2 {
+    font-family: 'Cinzel', serif;
+    color: #ffd700;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+}
+
+#magic-panel-merge p {
+    font-family: 'Quicksand', sans-serif;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    font-style: italic;
+}
+    
+    </style>
+</head>
+<body>
+
+    <div class="header-ui" id="main-title">
+        <h1>TOCA LA CÉLULA PARA INICIAR EL BIG BANG</h1>
+    </div>
+
+    <button id="btn-desbloqueo" onclick="mostrarAlertaFinal()">RECLAMAR SINCRONÍA</button>
+
+    <div id="modal-sincronia">
+        <div class="card-final">
+            <small style="color: #ffd700; font-weight: bold;">DIMENSIÓN RESTAURADA</small>
+            <h2 style="color: #b8860b; margin-top: 5px;">¡SINCRONÍA ÉPICA!</h2>
+            <p style="color: #666; font-family: 'Quicksand';">Has expandido el conocimiento a través del cosmos.</p>
+            <div class="box-frase">"Por medio del arte se logra un aprendizaje más significativo."</div>
+            <button class="btn-next" onclick="finalizarYVolver()">VOLVER AL LABERINTO</button>
+        </div>
+    </div>
+
+    <a-scene cursor="rayOrigin: mouse" raycaster="objects: .clickable">
+        
+        <a-sky id="sky" color="#f0f0f0"></a-sky>
+        <a-light type="ambient" intensity="0.8"></a-light>
+        <a-light id="sol-light" type="point" position="0 1.5 -12" intensity="0" color="#ffd700"></a-light>
+
+        <a-entity id="celula-container" position="0 1.5 -3" 
+          class="clickable"
+          onclick="iniciarBigBang()"
+          animation="property: rotation; to: 360 360 0; loop: true; dur: 8000; easing: linear">
+    
+    <a-box width="1" height="1" depth="1" 
+           material="color: #4a90e2; metalness: 0.8; roughness: 0.2; emissive: #1a2a4a">
+    </a-box>
+
+    <a-box width="1.1" height="1.1" depth="1.1" 
+           material="color: #4a90e2; wireframe: true; opacity: 0.4"
+           animation="property: scale; to: 1.15 1.15 1.15; dir: alternate; loop: true; dur: 2000">
+    </a-box>
+    </a-entity>
+
+        <a-entity id="cosmos" visible="false" position="0 1.5 -12">
+            <a-sphere id="sun" radius="1.5" color="#fff" material="emissive: #ffcc00; emissiveIntensity: 2" animation="property: scale; to: 1.1 1.1 1.1; dir: alternate; loop: true; dur: 3000"></a-sphere>
+            <a-text value="SOL" position="0 2.2 0" align="center" width="8" color="#fff"></a-text>
+
+            <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 5000; easing: linear">
+                <a-sphere position="2.5 0 0" radius="0.12" color="#aaa"></a-sphere>
+                <a-text value="MERCURIO" position="2.5 0.4 0" align="center" width="3" color="#fff"></a-text>
+            </a-entity>
+
+            <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear">
+                <a-sphere position="3.8 0.2 0" radius="0.22" color="#e3bb76"></a-sphere>
+                <a-text value="VENUS" position="3.8 0.6 0" align="center" width="3" color="#fff"></a-text>
+            </a-entity>
+
+            <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear">
+                <a-sphere position="5.2 0 0" radius="0.25" color="#2271b3"></a-sphere>
+                <a-text value="TIERRA" position="5.2 0.5 0" align="center" width="3" color="#fff"></a-text>
+            </a-entity>
+
+            <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 16000; easing: linear">
+                <a-sphere position="6.5 -0.3 0" radius="0.18" color="#e27b58"></a-sphere>
+                <a-text value="MARTE" position="6.5 0.3 0" align="center" width="3" color="#fff"></a-text>
+            </a-entity>
+
+            <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 25000; easing: linear">
+                <a-sphere position="8.5 0.5 0" radius="0.55" color="#d39c7e"></a-sphere>
+                <a-text value="JUPITER" position="8.5 1.3 0" align="center" width="4" color="#fff"></a-text>
+            </a-entity>
+
+            <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 35000; easing: linear">
+                <a-entity position="11 0 0">
+                    <a-sphere radius="0.45" color="#c5ab6e"></a-sphere>
+                    <a-torus radius="0.8" radius-tubular="0.02" rotation="90 0 0" color="#a4915e" opacity="0.6"></a-torus>
+                    <a-text value="SATURNO" position="0 0.9 0" align="center" width="4" color="#fff"></a-text>
+                </a-entity>
+            </a-entity>
+
+            <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 50000; easing: linear">
+                <a-sphere position="13.5 0.3 0" radius="0.32" color="#b5e1e2"></a-sphere>
+                <a-text value="URANO" position="13.5 0.8 0" align="center" width="3" color="#fff"></a-text>
+            </a-entity>
+
+            <a-entity animation="property: rotation; to: 0 360 0; loop: true; dur: 70000; easing: linear">
+                <a-sphere position="15.5 -0.2 0" radius="0.32" color="#3f54ba"></a-sphere>
+                <a-text value="NEPTUNO" position="15.5 0.7 0" align="center" width="3" color="#fff"></a-text>
+            </a-entity>
+        </a-entity>
+
+        <a-plane id="flash" position="0 1.6 -0.5" width="20" height="20" color="#fff" opacity="0" visible="false"></a-plane>
+
+        <a-entity id="rig" position="0 0 0">
+            <a-camera position="0 1.6 0">
+        <a-cursor color="#4a90e2" fuse="false"></a-cursor>
+        </a-camera>
+        </a-entity>
+    </a-scene>
+
+    <div id="magic-panel-merge">
+    <h2>Vórtice Galáctico</h2>
+    <p id="panel-text">LLEGÓ LA HORA DE LA REALIDAD AUMENTADA... SUMERGETE EN MERGE CUBE  </p>
+    <p style="font-size: 0.9rem; margin-top: 20px; color: #aaa;">
+        Estás observando el nacimiento del conocimiento a través de la realidad aumentada.
+    </p>
+</div>
+
+    <script>
+        const cam = document.getElementById('main-camera');
+
+        // --- SISTEMA DE ZOOM (Mouse y Touch) ---
+        window.addEventListener('wheel', (e) => {
+            let fov = parseFloat(cam.getAttribute('fov'));
+            fov = (e.deltaY < 0) ? Math.max(20, fov - 5) : Math.min(100, fov + 5);
+            cam.setAttribute('fov', fov);
+        });
+
+        let touchDist = 0;
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                let d = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                if (touchDist > 0) {
+                    let fov = parseFloat(cam.getAttribute('fov'));
+                    fov = (d > touchDist) ? Math.max(20, fov - 2) : Math.min(100, fov + 2);
+                    cam.setAttribute('fov', fov);
+                }
+                touchDist = d;
+            }
+        });
+        window.addEventListener('touchend', () => { touchDist = 0; });
+
+        // --- LÓGICA DE TRANSFORMACIÓN ---
+    function iniciarBigBang() {
+    const flash = document.getElementById('flash');
+    const cubo = document.getElementById('celula-container');
+    const cosmos = document.getElementById('cosmos');
+    const sky = document.getElementById('sky');
+    const panel = document.getElementById('magic-panel-merge');
+    
+    // El CUBO se encoge antes de explotar
+    panel.classList.add('active');
+    cubo.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 500; easing: easeInBack');
+    
+    setTimeout(() => {
+        flash.setAttribute('visible', 'true');
+        flash.setAttribute('animation', 'property: material.opacity; from: 0; to: 1; dur: 250; dir: alternate; loop: 1');
+        
+        setTimeout(() => {
+            cubo.setAttribute('visible', 'false');
+            cosmos.setAttribute('visible', 'true');
+            
+            // Transición de fondo
+            sky.setAttribute('animation', 'property: color; to: #050510; dur: 2500');
+            
+            // Aparece el botón de salida después
+            setTimeout(() => {
+                document.getElementById('btn-desbloqueo').style.display = 'block';
+            }, 3000);
+        }, 250);
+    }, 500);
+}
+
+        function mostrarAlertaFinal() {
+            document.getElementById('modal-sincronia').style.display = 'flex';
+        }
+
+    function finalizarYVolver() {
+    if(typeof userId !== 'undefined' && userId) {
+        db.ref('usuarios/' + userId).update({
+            nivel: firebase.database.ServerValue.increment(1), // Sube al nivel 3
+            monedas: firebase.database.ServerValue.increment(10), // ¡Sus 10 monedas!
+            estado_mision: "recompensa" // Señal para el laberinto
+        }).then(() => {
+            alert("¡INVESTIGACIÓN COMPLETADA! Has descubierto el origen del cosmos. Ganaste 10 monedas. 🪙");
+            window.location.href = 'laberinto.html?id=' + userId;
+        });
+    } else {
+        window.location.href = 'laberinto.html';
+    }
+}
+    </script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Islas Sincronía - Restauradores</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-purple: #bc13fe;
+            --glass: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background: #050510;
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px);
+            background-size: 550px 550px, 350px 350px;
+            color: white;
+            font-family: 'Quicksand', sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden;
+        }
+
+        .header { margin-top: 20px; text-align: center; z-index: 10; }
+        h1 { font-family: 'Orbitron', sans-serif; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); margin: 0; }
+        p.subtitle { color: #aaa; font-size: 0.9em; margin: 5px 0; }
+
+        .main-wrapper {
+            display: flex; flex-direction: row; gap: 20px;
+            width: 95%; max-width: 1100px; height: 70vh;
+            margin-top: 15px;
+        }
+
+        .puzzle-section {
+            flex: 1; background: var(--glass);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px; padding: 30px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center;
+        }
+
+        .fragmento-card {
+            font-size: 1.5em; font-weight: bold; color: var(--neon-blue);
+            background: rgba(0,0,0,0.4); padding: 25px; border-radius: 15px;
+            border: 2px dashed var(--neon-blue); margin: 20px 0;
+            box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2);
+            transition: all 0.4s ease;
+        }
+
+        .chat-section {
+            flex: 1; background: rgba(0, 0, 0, 0.6);
+            border-radius: 20px; border: 1px solid var(--neon-purple);
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 0 20px rgba(188, 19, 254, 0.2);
+        }
+
+        #chat-box {
+            flex: 1; padding: 20px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 10px;
+            background: linear-gradient(to bottom, transparent, rgba(188, 19, 254, 0.05));
+        }
+
+        .mensaje {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px; border-radius: 15px;
+            border-left: 3px solid var(--neon-purple);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .input-area { padding: 15px; background: rgba(255,255,255,0.05); display: flex; gap: 10px; }
+        input { flex: 1; background: transparent; border: 1px solid var(--neon-blue); border-radius: 25px; padding: 12px 20px; color: white; outline: none; }
+        
+        button.btn-send { background: var(--neon-blue); color: black; border: none; padding: 10px 25px; border-radius: 25px; font-weight: bold; cursor: pointer; }
+
+        .btn-return {
+            margin-top: 20px; background: rgba(255,255,255,0.1); 
+            border: 1px solid white; color: white;
+            padding: 12px 40px; border-radius: 30px; 
+            font-family: 'Orbitron'; cursor: pointer; transition: 0.4s;
+            opacity: 0.4; pointer-events: none;
+        }
+
+        .success-mode {
+            opacity: 1 !important; pointer-events: auto !important;
+            background: var(--neon-purple) !important;
+            border-color: var(--neon-blue) !important;
+            box-shadow: 0 0 25px var(--neon-purple);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        @media (max-width: 800px) {
+            .main-wrapper { flex-direction: column; height: auto; overflow-y: auto; }
+            .chat-section { height: 350px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>ISLAS SINCRONÍA</h1>
+        <p id="user-count" class="subtitle">Sincronizando con la red de Restauradores...</p>
+    </div>
+
+    <div class="main-wrapper">
+        <div class="puzzle-section">
+            <div id="status-icon" style="font-size: 3em;">📡</div>
+            <h2>Tu Fragmento Sagrado</h2>
+            <div id="mi-fragmento-display" class="fragmento-card">Cargando Esencia...</div>
+            <p id="instruccion-guia">La frase se adapta según los restauradores activos.</p>
+        </div>
+
+        <div class="chat-section">
+            <div id="chat-box"></div>
+            <div class="input-area">
+                <input type="text" id="chat-input" placeholder="Escribe tu parte de la frase..." onkeypress="if(event.key==='Enter') enviarMensaje()">
+                <button class="btn-send" onclick="enviarMensaje()">ENVIAR</button>
+            </div>
+        </div>
+    </div>
+
+    <button id="btn-final" class="btn-return" onclick="finalizarMision()">ESPERANDO SINCRONÍA</button>
+
+    <button onclick="forzarVictoria()" style="position:fixed; bottom:5px; right:5px; opacity:0.3; font-size:10px; background:none; border:1px solid #333; color:gray; cursor:pointer;">
+        DEBUG: FORZAR SINCRONÍA
+    </button>
+
+    <script>
+    // 1. Esperar a que todo el HTML cargue
+    window.addEventListener('load', () => {
+        
+        // 2. Verificar que userId exista (ya declarado en firebase-config.js)
+        // Si por alguna razón no está, lo buscamos de nuevo
+        const finalUserId = userId || new URLSearchParams(window.location.search).get('id') || 'invitado';
+        const miNombre = "Restaurador_" + finalUserId.substring(0, 4);
+
+        // 3. Referencias a Firebase (usando 'db' que ya está en tu config)
+        const chatRef = db.ref('chat_sincronia');
+        const presenciaRef = db.ref('presencia_islas');
+        
+        let misDatosMision = { fragmentos: [], pasos: 0 };
+
+        // --- MEGA BANCO DE DATOS ---
+        const megaBanco = {
+            "2": [
+                ["INTEGRIDAD EN DATOS", "RESULTADOS CONFIABLES"],
+                ["SISTEMAS CONTABLES", "TRANSPARENCIA TOTAL"],
+                ["ACTIVOS DIGITALES", "FLUJO CONSTANTE"],
+                ["CÓDIGO FUENTE", "BASE DEL CAMBIO"],
+                ["AUDITORÍA REAL", "SINCRONÍA LOGRADA"]
+            ],
+            "3": [
+                ["EL CONOCIMIENTO", "NO DEBE OCULTARSE", "DEBE HACERSE VISIBLE"],
+                ["PROCESAR INFORMACIÓN", "CON ÉTICA PROFESIONAL", "GENERA VALOR REAL"]
+            ],
+            "4": [
+                ["AUTOMATIZAR PROCESOS", "LIBERA EL TIEMPO", "PARA EL ANÁLISIS", "DE ALTO NIVEL"],
+                ["CADA REGISTRO", "ES UN ESLABÓN", "DE LA CONFIANZA", "EMPRESARIAL"]
+            ],
+            "5": [
+                ["EL FLUJO", "DE LA", "INFORMACIÓN FINANCIERA", "DEBE SER", "SIEMPRE VERIFICABLE"]
+            ]
+        };
+
+        // --- SISTEMA DE PRESENCIA ---
+        const miNodoPresencia = presenciaRef.push(true);
+        miNodoPresencia.onDisconnect().remove();
+
+        presenciaRef.on('value', (snap) => {
+            const count = snap.numChildren() || 1;
+            const counterEl = document.getElementById('user-count');
+            if(counterEl) counterEl.innerText = `RED: ${count} Restauradores en línea`;
+            actualizarDificultad(count);
+        });
+
+        function actualizarDificultad(numeroUsuarios) {
+            let dificultad = Math.min(Math.max(numeroUsuarios, 2), 5);
+            const bancoDelNivel = megaBanco[dificultad] || megaBanco["2"];
+
+            const hoy = new Date().getDate();
+            const fraseElegida = bancoDelNivel[hoy % bancoDelNivel.length];
+
+            misDatosMision.fragmentos = fraseElegida;
+            misDatosMision.pasos = dificultad;
+
+            // Asignación de fragmento (usando finalUserId)
+            const miIndice = (finalUserId.charCodeAt(finalUserId.length - 1) % dificultad);
+            const colores = ["#00f2ff", "#bc13fe", "#ff0055", "#ccff00", "#00ff99"];
+            
+            const display = document.getElementById('mi-fragmento-display');
+            if(display) {
+                display.innerText = `"${fraseElegida[miIndice]}"`;
+                display.style.color = colores[miIndice];
+                display.style.borderColor = colores[miIndice];
+            }
+            
+            const guia = document.getElementById('instruccion-guia');
+            if(guia) guia.innerText = `Eres el fragmento ${miIndice + 1} de ${dificultad}.`;
+        }
+
+        // --- LÓGICA DEL CHAT ---
+        chatRef.limitToLast(12).on('value', (snap) => {
+            const chatBox = document.getElementById('chat-box');
+            if(!chatBox) return;
+            
+            chatBox.innerHTML = "";
+            let historial = [];
+
+            snap.forEach(child => {
+                const data = child.val();
+                if(data.texto) {
+                    historial.push(data.texto.toUpperCase().trim());
+                    const div = document.createElement('div');
+                    div.className = "mensaje";
+                    div.innerHTML = `<small style="color:var(--neon-blue)">${data.nombre}:</small><br>${data.texto}`;
+                    chatBox.appendChild(div);
+                }
+            });
+            chatBox.scrollTop = chatBox.scrollHeight;
+            validarSecuencia(historial);
+        });
+
+        function validarSecuencia(mensajes) {
+            let etapa = 0;
+            const objetivo = misDatosMision.fragmentos;
+            if(!objetivo || objetivo.length === 0) return;
+
+            for (let msg of mensajes) {
+                if (msg === objetivo[etapa]) {
+                    etapa++;
+                }
+                if (etapa === misDatosMision.pasos) break;
+            }
+
+            const btn = document.getElementById('btn-final');
+            if (etapa === misDatosMision.pasos) {
+                btn.innerText = "¡SINCRONÍA LOGRADA! VOLVER";
+                btn.classList.add('success-mode');
+                document.getElementById('status-icon').innerText = "🌟";
+                window.misionCompletada = true;
+            } else {
+                btn.innerText = `SINCRONIZANDO (${etapa}/${misDatosMision.pasos})`;
+                btn.classList.remove('success-mode');
+                window.misionCompletada = false;
+            }
+        }
+
+        // Hacer funciones accesibles globalmente para los botones onclick
+        window.enviarMensaje = function() {
+            const input = document.getElementById('chat-input');
+            const texto = input.value.trim();
+            if (!texto) return;
+
+            chatRef.push({
+                nombre: miNombre,
+                texto: texto,
+                timestamp: Date.now()
+            });
+            input.value = "";
+        };
+
+        window.finalizarMision = function() {
+            if (!window.misionCompletada) return;
+            db.ref('usuarios/' + finalUserId).update({
+                nivel: 6,
+                monedas: firebase.database.ServerValue.increment(10)
+            }).then(() => {
+                alert("¡Misión Completada! Sincronía exitosa. Has ganado 10 monedas.");
+                window.location.href = 'laberinto.html?id=' + finalUserId;
+            });
+        };
+
+        window.forzarVictoria = function() {
+            window.misionCompletada = true;
+            const btn = document.getElementById('btn-final');
+            btn.innerText = "¡DEBUG MODE! VOLVER";
+            btn.classList.add('success-mode');
+            document.getElementById('status-icon').innerText = "🛠️";
+        };
+    });
+</script>
+</body>
+</html>

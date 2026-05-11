@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Portal 360 - Vértice Inmersivo</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Quicksand:wght@500;700&display=swap');
+        body {
+            margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center;
+            background: radial-gradient(circle, #0a0a2e 0%, #000 100%);
+            color: white; font-family: 'Quicksand', sans-serif; text-align: center;
+        }
+        .contenedor {
+            background: rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 20px;
+            border: 2px solid #4a90e2; backdrop-filter: blur(10px); width: 80%; max-width: 500px;
+        }
+        h1 { font-family: 'Cinzel', serif; color: #4a90e2; }
+        .btn {
+            display: inline-block; padding: 15px 30px; margin: 10px;
+            border-radius: 50px; cursor: pointer; font-weight: bold;
+            text-decoration: none; transition: 0.3s; font-family: 'Cinzel';
+        }
+        .btn-viajar { background: #4a90e2; color: white; border: none; }
+        .btn-viajar:hover { background: #357abd; transform: scale(1.1); }
+        .btn-volver { background: #2e7d32; color: white; border: none; display: none; }
+    </style>
+</head>
+<body>
+    <div class="contenedor">
+        <h1>🌀 Portal Inmersivo 360</h1>
+        <p>Estás a punto de entrar en una distorsión del espacio-tiempo. Explora el mundo desde todas sus dimensiones.</p>
+        
+        <a href="https://ar-code.com/ZkaY9AKUE" target="_blank" class="btn btn-viajar" onclick="activarFinalizar()">VIAJAR A LA DIMENSIÓN</a>
+        
+        <div id="check-area" style="margin-top: 20px; display: none;">
+            <p>¿Has terminado tu observación, Restaurador?</p>
+            <button class="btn btn-volver" id="btn-listo" onclick="completarMision()">HE VUELTO Y ESTOY LISTO</button>
+        </div>
+    </div>
+
+    <script>
+        function activarFinalizar() {
+            // Mostramos el área para confirmar que ya volvió
+            document.getElementById('check-area').style.display = 'block';
+            document.getElementById('btn-listo').style.display = 'inline-block';
+        }
+
+        function completarMision() {
+            if(userId) {
+                db.ref('usuarios/' + userId).update({
+                    nivel: 10, // Te manda a la Ciudadela Final (prueba.html)
+                    monedas: firebase.database.ServerValue.increment(10),
+                    estado_mision: "recompensa"
+                }).then(() => {
+                    alert("¡Excelente! Has comprendido la realidad multidimensional. ¡Has ganado 10 monedas.🪙​!");
+                    window.location.href = 'laberinto.html?id=' + userId;
+                });
+            }
+        }
+    </script>
+</body>
+</html>

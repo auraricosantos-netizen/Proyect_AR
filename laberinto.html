@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senda del Restaurador - Bosque Mágico</title>
+    <!-- Fuentes -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            overflow: hidden; 
+            /* Fondo "verdocito" mágico y luminoso */
+            background: radial-gradient(circle at center, #e3fbe3 0%, #8fce8f 100%); 
+            font-family: 'Poppins', sans-serif;
+        }
+
+        #gameCanvas { 
+            display: block; 
+            width: 100vw; 
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* HUD Superior */
+        #ui-layer { 
+            position: absolute; top: 20px; left: 20px; right: 20px; 
+            display: flex; justify-content: space-between; z-index: 50; 
+            pointer-events: none; 
+        }
+        
+        .stat-box { 
+            background: rgba(255, 255, 255, 0.9); padding: 10px 20px; 
+            border-radius: 15px; border: 2px solid #2e7d32; 
+            color: #1b5e20; font-family: 'Orbitron'; font-weight: bold; 
+            pointer-events: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        /* Modales */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(20, 50, 20, 0.6); display: none; 
+            justify-content: center; align-items: center; z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .carta-papel {
+            background: #fffaf0; padding: 30px; border: 2px solid #8b4513;
+            box-shadow: 8px 8px 0px #4a6b4a; width: 85%; max-width: 500px;
+            text-align: center; color: #2e4c2e; position: relative;
+            font-family: 'Quicksand', sans-serif;
+            animation: slideUp 0.5s ease-out; border-radius: 8px;
+        }
+
+        .carta-papel h2 { font-family: 'Cinzel', serif; margin-top: 0; color: #2e7d32; }
+        
+        .btn-estacion {
+            background: #4a6b4a; color: white; padding: 12px 25px;
+            border: none; border-radius: 5px; font-weight: bold; cursor: pointer;
+            margin: 10px; font-family: 'Cinzel', serif; transition: 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        
+        .btn-estacion:hover { transform: scale(1.05); background: #2e4c2e; }
+
+        #phrase-input {
+            width: 80%; padding: 10px; margin: 15px 0; text-align: center; 
+            border-radius: 5px; border: 2px solid #4a6b4a; font-size: 1.1rem;
+            outline: none; font-family: 'Quicksand', sans-serif; font-weight: bold;
+            color: #1b5e20; background: #f0f9f0;
+        }
+
+        @keyframes slideUp { 
+            from { transform: translateY(100px); opacity: 0; } 
+            to { transform: translateY(0); opacity: 1; } 
+        }
+
+        /* Oráculo */
+        .oracle-box {
+            background: rgba(255, 255, 255, 0.95); border-left: 5px solid #f1c40f;
+            padding: 15px; margin-top: 15px; text-align: left;
+            font-style: italic; font-size: 0.95rem; color: #4e342e; display: none;
+            border-radius: 0 8px 8px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        /* --- NUEVOS ESTILOS PARA MONEDAS Y ALERTA --- */
+.stats-container { display: flex; gap: 10px; pointer-events: auto; }
+.stat-box { 
+    background: rgba(255, 255, 255, 0.9); padding: 10px 20px; 
+    border-radius: 15px; border: 2px solid #2e7d32; 
+    color: #1b5e20; font-family: 'Orbitron'; font-weight: bold; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    display: flex; align-items: center; gap: 8px;
+}
+.coin-box { border-color: #ffd700; color: #b8860b; background: rgba(255, 252, 230, 0.95); }
+
+#reward-scroll {
+    position: fixed; top: -150px; left: 50%; transform: translateX(-50%);
+    background: #fdf5e6; border: 2px solid #8b4513; border-radius: 5px;
+    padding: 15px 35px; display: flex; align-items: center; gap: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 2000;
+    transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: none;
+}
+#reward-scroll.show { top: 40px; }
+.scroll-icon { font-size: 2em; animation: coinFloat 2s infinite ease-in-out; }
+.scroll-text { font-family: 'Cinzel'; font-weight: bold; color: #5d4037; font-size: 1.1em; }
+@keyframes coinFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    
+/* --- BOTÓN CONTINUAR FLOTANTE --- */
+#btn-continuar-mision {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none; /* Empieza oculto */
+    z-index: 90;
+    background: #2e7d32;
+    color: white;
+    padding: 15px 40px;
+    border-radius: 50px;
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: 3px solid #fff;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    animation: bounce 2s infinite;
+    pointer-events: auto;
+}
+
+#btn-continuar-mision:hover {
+    background: #1b5e20;
+    transform: translateX(-50%) scale(1.05);
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+    40% {transform: translateX(-50%) translateY(-10px);}
+    60% {transform: translateX(-50%) translateY(-5px);}
+}
+
+</style>
+</head>
+<body>
+
+    <div id="ui-layer">
+    <div class="stats-container">
+        <div class="stat-box">📍 Nivel <span id="level-num">1</span></div>
+        <div class="stat-box coin-box">💰 Oro <span id="monedas-count">0</span></div>
+    </div>
+    <div style="font-family: 'Cinzel'; color: #1b5e20;">EL RECORRIDO DEL APRENDIZAJE</div>
+<button id="btn-continuar-mision" onclick="mostrarMision()">✨ CONTINUAR MISIÓN</button>
+</div>
+
+<div id="reward-scroll">
+    <span class="scroll-icon">💰</span>
+    <span class="scroll-text">¡HAS GANADO 10 MONEDAS!</span>
+</div>
+
+    <!-- 1. BIENVENIDA -->
+    <div id="modal-bienvenida" class="overlay" style="display: flex;">
+        <div class="carta-papel">
+            <h2>📜 El Bosque del Aprendizaje</h2>
+            <p>¡Saludos, valiente Restaurador!</p>
+            <p>Tu misión es recorrer las 10 estaciones sagradas del bosque, superar los retos en las otras dimensiones y recuperar las <b>frases clave</b> para restaurar el equilibrio de este mundo mágico.</p>
+            <button class="btn-estacion" onclick="iniciarAventura()">ADENTRARSE AL BOSQUE</button>
+        </div>
+    </div>
+
+    <!-- 2. DESCRIPCIÓN DE MISIÓN -->
+    <div id="modal-intro" class="overlay">
+        <div class="carta-papel">
+            <h2 id="titulo-mision">ESTACIÓN</h2>
+            <div id="texto-intro" style="font-style: italic; margin-bottom: 20px;"></div>
+            
+            <button class="btn-estacion" style="background: #d4a017; color: #3e2723;" onclick="consultarOraculo()">
+                ✨ Consultar Hada Oráculo
+            </button>
+            <div id="oracle-box" class="oracle-box"></div>
+
+            <button class="btn-estacion" onclick="abrirActividad()">IR A LA DIMENSIÓN</button>
+            <button class="btn-estacion" style="background:#777;" onclick="cerrarModal('modal-intro')">CERRAR</button>
+        </div>
+    </div>
+
+    <!-- 3. COFRE DEL SABER -->
+    <div id="modal-baul" class="overlay">
+        <div class="carta-papel">
+            <h2>🎁 Cofre del Saber</h2>
+            <p>Has regresado de la dimensión. Escribe la frase mágica recuperada:</p>
+            <input type="text" id="phrase-input" placeholder="ESCRIBE EL HECHIZO AQUÍ..." autocomplete="off">
+            <br>
+            <button class="btn-estacion" onclick="validarMision()">RESTAURAR ÁREA</button>
+            <button class="btn-estacion" style="background:#777;" onclick="cerrarModal('modal-baul')">CANCELAR</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Firebase Core -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const apiKey = ""; // Clave de Gemini
+
+        let nivelActual = 1;
+        let frameCount = 0;
+        let empezarViaje = false;
+        let misionActiva = false;
+
+        const parametrosUrl = new URLSearchParams(window.location.search);
+        const idUsuario = parametrosUrl.get("id") || (typeof userId !== 'undefined' ? userId : "invitado");
+
+        // LAS 10 SESIONES (Lore 100% Épico y Actualizado) jsjs
+const sesiones = {
+    1: { 
+        titulo: "Villa Raíz", 
+        intro: "Has despertado en el origen, Restaurador. Las raíces del Gran Árbol susurran secretos olvidados. Tu primera misión no está en esta pantalla, sino en el mundo de la vigilia (el mundo real). Busca el Código QR escondido a tu alrededor, escanéalo y reclama tu primera chispa de sabiduría.", 
+        frase: "LA COMPRENSIÓN NO SOLO SE ESTABLECE, TAMBIÉN DEBE HACERSE PERCEPTIBLE.", 
+        link: null 
+    },
+    2: { 
+        titulo: "Bahía Cubo", 
+        intro: "Las mareas de esta bahía ocultan artefactos antiguos. Los sabios atraparon la magia en un cubo de seis caras. Usa tu Merge Cube para materializar lo invisible sobre las aguas y descubrir cómo el arte transforma la mente.", 
+        frase: "POR MEDIO DEL ARTE SE LOGRA UN APRENDIZAJE MAS SIGNIFICATIVO", 
+        link: "merge.html" 
+    },
+    3: { 
+        titulo: "Pradera Quiver", 
+        intro: "En estas extensas llanuras, el arte incoloro anhela despertar. Viaja a esta dimensión, pinta los pergaminos inertes y demuestra que la disciplina y la responsabilidad tienen el poder de dar vida propia a tus creaciones.", 
+        frase: "LA MAGIA DE LA RESPONSABILIDAD Y LA DISCIPLINA CONSTRUYE UN APRENDIZAJE SEGURO", 
+        link: "quiver.html" 
+    },
+    4: { 
+        titulo: "Reino Meta", 
+        intro: "Ante ti se alzan los cimientos de una nueva era. Adéntrate en el espacio tridimensional del Reino, encuentra el Faro de Luz y conviértete en el arquitecto de tu propia realidad tecnológica para entender tu misión en la enseñanza.", 
+        frase: "TODOS TENEMOS UNA MISION FRENTE AL PROCESO DE LA ENSEÑANZA", 
+        link: "meta.html" 
+    },
+    5: { 
+        titulo: "Islas Sincronía", 
+        intro: "Has llegado a un archipiélago donde resuenan las voces de otros viajeros. Entra a la cámara astral de chat y une tus pensamientos a los de tus compañeros. Recuerda que el conocimiento compartido es luz que nunca se apaga.", 
+        frase: "EL CONOCIMIENTO NO DEBE OCULTARSE DEBE HACERSE VISIBLE", 
+        link: "online.html" 
+    },
+    6: { 
+        titulo: "Fuerte Investigación", 
+        intro: "Una imponente fortaleza de conocimiento se alza desafiante. Regresa a las maravillas del Merge Cube, pues los secretos más profundos requieren ser observados desde múltiples ángulos. Investiga sus rincones y halla la verdad oculta.", 
+        frase: "EL CONOCIMIENTO SE CONSTRUYE CUANDO PUEDE SER INVESTIGADO DESDE MULTIPLES DIMENSIONES", 
+        link: "investigacion.html" 
+    },
+    7: { 
+        titulo: "Santuario Vida", 
+        intro: "Un templo milenario palpita con el ritmo de la creación. Invoca el holograma sagrado del cuerpo humano y contempla el latido vital del aprendizaje. Comprende que el saber, al construirse desde adentro, se vuelve irrompible.", 
+        frase: "CUANDO EL APRENDIZAJE SE CONSTRUYE SE VELVE MAS SIGNIFICATIVO", 
+        link: "anatomy.html" 
+    },
+    8: { 
+        titulo: "Pico Arloopa", 
+        intro: "Has escalado hasta las cumbres de lo desconocido. Usa tu lente de realidad aumentada para iluminar los monolitos invisibles que coronan esta montaña. Aprende a descubrir los enigmas que escapan a la simple vista.", 
+        frase: "APRENDER ES DESCUBRIR LO QUE NO SE VEA A SIMPLE VISTA", 
+        link: "arloopa.html" 
+    },
+    9: { 
+        titulo: "Portal 360", 
+        intro: "Un vértice espaciotemporal se abre frente a ti. Atraviesa este portal hacia horizontes infinitos. Explora cada rincón del mundo inmersivo, pues solo observando desde todas sus dimensiones lograrás comprender la realidad absoluta.", 
+        frase: "EXPLORAR EL MUNDO DESDE TODAS SUS DIMENSIONES NOS PERMITE COMPRENDER LA REALIDAD", 
+        link: "portal.html" 
+    },
+    10: { 
+        titulo: "Ciudadela Final", 
+        intro: "¡El momento supremo ha llegado, Gran Restaurador! Las monumentales puertas de la Ciudadela Final se abren de par en par. Toda la sabiduría recolectada te ha preparado para este instante. Supera el reto de maestría y consolida tu poder.", 
+        frase: "GAMIFICACION INMERSIVA", 
+        link: "prueba.html" 
+    }
+};
+
+        const estaciones = [
+            { x: 0.15, y: 0.75, icono: "🌳" }, { x: 0.30, y: 0.65, icono: "🌊" },
+            { x: 0.22, y: 0.45, icono: "🧚" }, { x: 0.38, y: 0.25, icono: "🏰" },
+            { x: 0.55, y: 0.55, icono: "🏝️" }, { x: 0.72, y: 0.70, icono: "🏛️" },
+            { x: 0.85, y: 0.50, icono: "❤️" }, { x: 0.75, y: 0.20, icono: "🏔️" },
+            { x: 0.90, y: 0.30, icono: "🌀" }, { x: 0.95, y: 0.55, icono: "🗼" }
+        ];
+
+        // CREACIÓN DE DECORACIONES Y BOSQUE
+        const decoraciones = [
+            { x: 0.08, y: 0.08, tipo: 'brujula', emoji: '🧭', size: 70 },
+            { x: 0.20, y: 0.15, tipo: 'montaña', label: 'Montes del Saber', emoji: '🏔️', size: 50 },
+            // Bestias Místicas
+            { x: 0.85, y: 0.85, tipo: 'bestia', label: 'Kraken de Tierra', emoji: '🦑', size: 60 },
+            { x: 0.15, y: 0.35, tipo: 'bestia', label: 'Unicornio Real', emoji: '🦄', size: 55 },
+            { x: 0.60, y: 0.25, tipo: 'bestia', label: 'Búho Sabio', emoji: '🦉', size: 50 },
+            { x: 0.45, y: 0.85, tipo: 'bestia', label: 'Dragón del Bosque', emoji: '🐉', size: 65 },
+            // Setas
+            { x: 0.28, y: 0.55, tipo: 'estatico', emoji: '🍄', size: 30 },
+            { x: 0.70, y: 0.60, tipo: 'estatico', emoji: '🍄', size: 40 },
+            { x: 0.50, y: 0.35, tipo: 'estatico', emoji: '🍄', size: 25 },
+        ];
+
+        // Generar muchos árboles alrededor para dar sensación de bosque frondoso
+        const zonasArboles = [
+            {x: 0.05, y: 0.2}, {x: 0.1, y: 0.25}, {x: 0.08, y: 0.5}, {x: 0.05, y: 0.8},
+            {x: 0.12, y: 0.9}, {x: 0.25, y: 0.85}, {x: 0.35, y: 0.92}, {x: 0.45, y: 0.1},
+            {x: 0.55, y: 0.15}, {x: 0.65, y: 0.1}, {x: 0.85, y: 0.15}, {x: 0.95, y: 0.2},
+            {x: 0.85, y: 0.35}, {x: 0.95, y: 0.45}, {x: 0.90, y: 0.75}, {x: 0.95, y: 0.85},
+            {x: 0.75, y: 0.95}, {x: 0.65, y: 0.85}, {x: 0.55, y: 0.90}, {x: 0.45, y: 0.50},
+            {x: 0.55, y: 0.35}, {x: 0.65, y: 0.45}, {x: 0.80, y: 0.60}, {x: 0.35, y: 0.15}
+        ];
+
+        zonasArboles.forEach(pos => {
+            // Mezclar Pinos y Robles de diferentes tamaños
+            let arbolEmoji = Math.random() > 0.5 ? '🌳' : '🌲';
+            let tamanoAleatorio = 35 + Math.random() * 25;
+            decoraciones.push({ x: pos.x, y: pos.y, tipo: 'estatico', emoji: arbolEmoji, size: tamanoAleatorio });
+        });
+
+        let player = { emoji: '👤', x: -50, y: window.innerHeight / 2, speed: 0.04 };
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // MOTOR DE DIBUJO
+        function draw() {
+            frameCount++;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Dibujar Decoraciones (Árboles, Setas, Montañas, Bestias)
+            decoraciones.forEach((d, index) => {
+                let dx = d.x * canvas.width;
+                let dy = d.y * canvas.height;
+                ctx.textAlign = "center";
+                
+                if (d.tipo === 'montaña') {
+                    ctx.font = `${d.size}px Arial`; ctx.fillText(d.emoji, dx, dy);
+                    ctx.fillStyle = "#2e4c2e"; ctx.font = "bold italic 12px Cinzel"; ctx.fillText(d.label, dx, dy + 20);
+                } else if (d.tipo === 'bestia') {
+                    // Flotación suave desfasada para cada bestia
+                    let float = Math.sin((frameCount * 0.03) + index) * 10;
+                    ctx.font = `${d.size}px Arial`; ctx.fillText(d.emoji, dx, dy + float);
+                    ctx.fillStyle = "#2e4c2e"; ctx.font = "bold italic 12px Cinzel"; ctx.fillText(d.label, dx, dy + float + 25);
+                } else if (d.tipo === 'brujula') {
+                    ctx.save(); ctx.translate(dx, dy); ctx.rotate(frameCount * 0.005);
+                    ctx.font = `${d.size}px Arial`; ctx.fillText(d.emoji, 0, 15); ctx.restore();
+                } else if (d.tipo === 'estatico') {
+                    // Árboles y Setas con un ligero movimiento de "respiración" para darle vida
+                    let breath = Math.sin(frameCount * 0.01 + index) * 1.5;
+                    ctx.font = `${d.size + breath}px Arial`; ctx.fillText(d.emoji, dx, dy);
+                }
+            });
+
+            // 2. Dibujar Camino (Línea punteada)
+            ctx.beginPath();
+            ctx.setLineDash([8, 12]);
+            ctx.strokeStyle = "rgba(74, 107, 74, 0.4)"; // Verde oscuro translúcido
+            ctx.lineWidth = 4;
+            ctx.moveTo(estaciones[0].x * canvas.width, estaciones[0].y * canvas.height);
+            for(let i=1; i<estaciones.length; i++) ctx.lineTo(estaciones[i].x * canvas.width, estaciones[i].y * canvas.height);
+            ctx.stroke();
+
+            // 3. Camino Recorrido (Línea sólida dorada brillante)
+            ctx.beginPath();
+            ctx.setLineDash([]);
+            ctx.strokeStyle = "#ffd700";
+            ctx.shadowColor = "rgba(255, 215, 0, 0.6)";
+            ctx.shadowBlur = 10;
+            ctx.lineWidth = 5;
+            ctx.moveTo(estaciones[0].x * canvas.width, estaciones[0].y * canvas.height);
+            for(let i=1; i < nivelActual; i++) ctx.lineTo(estaciones[i].x * canvas.width, estaciones[i].y * canvas.height);
+            ctx.stroke();
+            ctx.shadowBlur = 0; // Reset shadow
+
+            // 4. Estaciones
+            estaciones.forEach((est, i) => {
+                const n = i + 1;
+                const actual = n === nivelActual;
+                const pasada = n < nivelActual;
+                let ex = est.x * canvas.width;
+                let ey = est.y * canvas.height;
+
+                // Aura luminosa para la estación actual
+                if(actual) {
+                    let pulse = Math.sin(frameCount * 0.08) * 8;
+                    ctx.fillStyle = "rgba(255, 215, 0, 0.25)";
+                    ctx.beginPath(); ctx.arc(ex, ey, 50 + pulse, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = "rgba(255, 215, 0, 0.4)";
+                    ctx.beginPath(); ctx.arc(ex, ey, 35 + (pulse/2), 0, Math.PI*2); ctx.fill();
+                }
+
+                // Círculo base de la estación
+                ctx.fillStyle = actual ? "#f1c40f" : (pasada ? "#4a6b4a" : "rgba(100, 130, 100, 0.6)");
+                ctx.beginPath(); ctx.arc(ex, ey, 18, 0, Math.PI*2); ctx.fill();
+                
+                // Emoji de la estación
+                ctx.font = "35px Arial"; ctx.fillText(est.icono, ex, ey - 25);
+                
+                // Texto de la estación
+                ctx.fillStyle = actual ? "#1b5e20" : (pasada ? "#2e4c2e" : "rgba(46, 76, 46, 0.5)");
+                ctx.font = "bold 12px Orbitron"; ctx.fillText(sesiones[n].titulo.toUpperCase(), ex, ey + 45);
+            });
+
+            // 5. Jugador y Movimiento
+            // 5. Jugador y Movimiento
+        if (empezarViaje) {
+     let targetEst = estaciones[nivelActual - 1] || estaciones[0];
+     let tx = targetEst.x * canvas.width;
+        let ty = targetEst.y * canvas.height;
+
+     player.x += (tx - player.x) * player.speed;
+        player.y += (ty - player.y) * player.speed;
+
+    let distancia = Math.hypot(tx - player.x, ty - player.y);
+    
+    // Solo mostramos la misión si el jugador llega por primera vez o no ha sido activada
+    if (distancia < 5 && !misionActiva && !window.misionMostrada) {
+        mostrarMision();
+        misionActiva = true;
+        window.misionMostrada = true; // Flag para que no se repita en bucle
+    }
+    
+    // Si subimos de nivel, reseteamos el flag para la siguiente estación
+    if (distancia > 50) {
+        window.misionMostrada = false;
+    }
+}
+
+            // Animación de salto al caminar
+            let bounce = empezarViaje ? Math.abs(Math.sin(frameCount * 0.15)) * 12 : 0;
+            ctx.font = "55px Arial";
+            ctx.fillText(player.emoji, player.x, player.y - bounce);
+
+            requestAnimationFrame(draw);
+        }
+
+        // NUEVA FUNCIÓN: DISPARAR EL PERGAMINO BONITO
+        function lanzarPergamino() {
+        const scroll = document.getElementById('reward-scroll');
+        scroll.classList.add('show');
+        setTimeout(() => { scroll.classList.remove('show'); }, 4500);
+}
+        // CONTROL DE INTERFAZ
+        function iniciarAventura() {
+            document.getElementById('modal-bienvenida').style.display = 'none';
+            empezarViaje = true;
+        }
+
+        function cerrarModal(id) {
+    document.getElementById(id).style.display = 'none';
+    document.getElementById('oracle-box').style.display = 'none';
+    
+    // Si la ventana que se cerró es la de la misión (modal-intro)
+    if (id === 'modal-intro') {
+        // MOSTRAR EL BOTÓN para que pueda volver a abrirla
+        document.getElementById("btn-continuar-mision").style.display = 'block';
+    }
+    
+    misionActiva = false;
+}
+
+        function mostrarMision() {
+    const s = sesiones[nivelActual];
+    document.getElementById("titulo-mision").innerText = s.titulo;
+    document.getElementById("texto-intro").innerText = s.intro;
+    document.getElementById("modal-intro").style.display = 'flex';
+    
+    // OCULTAMOS EL BOTÓN porque la ventana ya está abierta
+    document.getElementById("btn-continuar-mision").style.display = 'none';
+}
+
+        // Clic en las ciudades 
+        canvas.addEventListener('click', (e) => {
+            const mx = e.clientX; const my = e.clientY;
+            estaciones.forEach((est, i) => {
+                let ex = est.x * canvas.width;
+                let ey = est.y * canvas.height;
+                // Área de toque generosa (50px)
+                if (Math.hypot(mx - ex, my - ey) < 50) {
+                    const n = i + 1;
+                    if (n === nivelActual) {
+                        mostrarMision();
+                        misionActiva = true;
+                    } else if (n < nivelActual) {
+                        document.getElementById("modal-baul").style.display = 'flex';
+                    }
+                }
+            });
+        });
+
+        // VIAJAR A OTRO HTML
+        function abrirActividad() {
+            const s = sesiones[nivelActual];
+            if (s.link) {
+                window.location.href = s.link + (s.link.includes('?') ? '&' : '?') + "id=" + idUsuario;
+            } else {
+                document.getElementById("modal-intro").style.display = 'none';
+                document.getElementById("modal-baul").style.display = 'flex';
+            }
+        }
+
+        // VALIDACIÓN DE FRASE
+        function validarMision() {
+        const p = document.getElementById("phrase-input").value.toUpperCase().trim();
+        const correcta = sesiones[nivelActual].frase.toUpperCase();
+    
+    if (p === correcta) {
+        if (typeof db !== 'undefined') {
+            // ¡Aquí estaba el error! Todo debe ir dentro de las llaves del update
+            db.ref('usuarios/' + idUsuario).update({ 
+                nivel: nivelActual + 1,
+                monedas: firebase.database.ServerValue.increment(10),
+                estado_mision: "recompensa"
+            }).then(() => {
+                alert("✨ ¡Magia Restaurada con Éxito! Has ganado 10 monedas.🪙");
+                document.getElementById("modal-baul").style.display = 'none';
+                document.getElementById("phrase-input").value = "";
+                misionActiva = false;
+            });
+        } else {
+            alert("✨ ¡Hechizo Correcto! (Modo local)"); 
+            nivelActual++;
+            document.getElementById("level-num").innerText = nivelActual;
+            cerrarModal('modal-baul');
+        }
+    } else {
+        alert("Las palabras mágicas no son correctas. Sigue buscando en la dimensión.");
+    }
+}
+    
+        // ORÁCULO DE GEMINI
+        async function consultarOraculo() {
+            const box = document.getElementById('oracle-box');
+            const s = sesiones[nivelActual];
+            box.innerText = "Llamando a las hadas de la sabiduría...";
+            box.style.display = 'block';
+
+            const prompt = `Actúa como un Hada Sabia del Bosque Mágico. Da un acertijo o pista corta (1-2 líneas) para la estación "${s.titulo}" que trata de "${s.intro}". NO digas la frase: "${s.frase}".`;
+            try {
+                // CAMBIO EN LA URL: De gemini-2.5... a gemini-1.5-flash
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+            contents: [{ 
+            parts: [{ text: prompt }] 
+
+        }] 
+    })
+});
+               const data = await response.json();
+        // Esta parte que me mostraste ahora funcionará porque el fetch será exitoso
+        box.innerText = "✨ " + data.candidates[0].content.parts[0].text;
+    } catch (e) {
+        box.innerText = "Las hadas están durmiendo. Vuelve a intentarlo.";
+    }
+}
+
+        // SINCRONIZACIÓN FIREBASE
+       if (idUsuario && typeof db !== 'undefined') {
+    db.ref('usuarios/' + idUsuario).on('value', snap => {
+        const d = snap.val();
+        if (d) {
+            nivelActual = d.nivel || 1;
+            document.getElementById("level-num").innerText = nivelActual;
+            
+            // ACTUALIZACIÓN DE MONEDAS EN TIEMPO REAL
+            const nuevasMonedas = d.monedas || 0;
+            document.getElementById("monedas-count").innerText = nuevasMonedas;
+
+            // DETECTAR SEÑAL DEL SISTEMA: Si el estado es "recompensa"
+            if (d.estado_mision === "recompensa") {
+                lanzarPergamino();
+                // Limpiamos la señal para que no se repita
+                db.ref('usuarios/' + idUsuario).update({ estado_mision: "espera" });
+            }
+
+            if(d.emoji) player.emoji = d.emoji; 
+        }
+    });
+}
+
+        // Iniciar el renderizado
+        window.onload = draw;
+    </script>
+</body>
+</html>

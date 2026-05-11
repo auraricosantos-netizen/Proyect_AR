@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Nexo-C: Reino Meta - Restauradores</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.1/nipplejs.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap');
+
+        /* VOLVEMOS AL BLANCO AZULADO ORIGINAL */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #f0faff; font-family: 'Rajdhani', sans-serif; }
+
+        #status-hud {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            color: #0088aa; font-family: 'Orbitron'; text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        #joystick-zone {
+            position: fixed; bottom: 40px; left: 40px; width: 150px; height: 150px;
+            z-index: 2000; background: rgba(0, 240, 255, 0.05); border-radius: 50%;
+        }
+
+        #magic-panel {
+            position: fixed; top: 0; right: -400px; width: 350px; height: 100%;
+            background: rgba(10, 20, 40, 0.9); backdrop-filter: blur(15px);
+            border-left: 4px solid #00f0ff; display: flex; flex-direction: column;
+            justify-content: center; padding: 40px; box-sizing: border-box;
+            transition: right 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000; color: white;
+        }
+
+        #magic-panel.active { right: 0; }
+        #magic-panel h2 { font-family: 'Orbitron'; color: #00f0ff; border-bottom: 2px solid #00f0ff; padding-bottom: 10px; }
+        #lore-text-side { font-style: italic; line-height: 1.6; font-size: 1.1rem; color: #e0faff; }
+
+        .nipple .back { background: rgba(0, 240, 255, 0.1) !important; border: 2px solid #00f0ff !important; }
+        .nipple .front { background: #00f0ff !important; box-shadow: 0 0 20px #00f0ff; }
+    </style>
+</head>
+<body>
+
+    <div id="status-hud">
+        <h2 style="margin:0;">NEXO-C: EXPLORACIÓN</h2>
+        <small style="color: #00bfff;">ESTADO: CREATIVIDAD ACTIVA</small>
+    </div>
+
+    <div id="joystick-zone"></div>
+
+    <div id="magic-panel">
+        <h2>Pensamiento Visible</h2>
+        <div id="lore-text-side">💭 Acércate a un hito para revelar su sabiduría...</div>
+    </div>
+
+    <a-scene fog="type: exponential; color: #f0faff; density: 0.02" vr-mode-ui="enabled: false">
+        
+        <a-sky color="#dbf3ff"></a-sky>
+
+        <a-plane rotation="-90 0 0" width="100" height="100" color="#ffffff" material="metalness: 0.6; roughness: 0.1; opacity: 0.8; transparent: true;"></a-plane>
+        <a-grid rotation="-90 0 0" width="100" height="100" material="color: #00f0ff; opacity: 0.15;"></a-grid>
+
+        <a-entity id="nexo-estructuras"></a-entity>
+
+        <a-entity id="faro-final" position="0 0 -22">
+            <a-cone radius-bottom="2.5" radius-top="0" height="5" color="#ffffff" material="opacity: 0.4; transparent: true;"></a-cone>
+            <a-sphere position="0 4.5 0" radius="0.9" color="#ffd700" material="emissive: #ffd700; emissiveIntensity: 2.5;"
+                      animation="property: position; to: 0 5 0; dir: alternate; dur: 2500; loop: true; easing: easeInOutSine"></a-sphere>
+            <a-light type="point" color="#ffd700" intensity="2" distance="15"></a-light>
+            <a-text value="CREAR" position="0 2.8 0" align="center" width="7" color="#0088aa" font="orbitron"></a-text>
+        </a-entity>
+
+        <a-entity id="rig" position="0 0 5">
+            <a-camera id="camera" look-controls="pointerLockEnabled: false"></a-camera>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        let joystickData = { vector: { x: 0, y: 0 } };
+        let permitirFinalizar = false;
+        let ultimoCuboLeido = null;
+
+        const hitosdesabiduria = [
+            "La imaginación es el taller donde se forja el futuro del aprendizaje.",
+            "Un Restaurador no solo mira, imagina mundos que otros no ven.",
+            "La mente es un lienzo infinito donde cada pensamiento es realidad.",
+            "Cerrar los ojos es abrir las puertas a dimensiones posibles.",
+            "La verdadera magia convierte un 'imposible' en un 'todavía no'.",
+            "Donde termina el conocimiento, comienza la imaginación.",
+            "Tu mente es el único laboratorio sin límites de este reino."
+        ];
+
+        window.onload = () => {
+            const contenedor = document.getElementById('nexo-estructuras');
+            for(let i=0; i<15; i++){
+                let x = (Math.random() - 0.5) * 35;
+                let z = (Math.random() - 0.5) * 35 - 10;
+                
+                let col = document.createElement('a-cylinder');
+                col.setAttribute('position', `${x} 5 ${z}`);
+                col.setAttribute('radius', '0.05');
+                col.setAttribute('height', '10');
+                col.setAttribute('color', '#00f0ff');
+                col.setAttribute('opacity', '0.4');
+                contenedor.appendChild(col);
+
+                let cubo = document.createElement('a-box');
+                cubo.setAttribute('position', `${x} 1.5 ${z}`);
+                cubo.classList.add('cubo-lore');
+                cubo.setAttribute('color', '#fff');
+                cubo.setAttribute('material', 'metalness: 1; roughness: 0; opacity: 0.7; transparent: true');
+                cubo.setAttribute('animation', 'property: rotation; to: 360 360 360; loop: true; dur: 4000');
+                
+                const frase = hitosdesabiduria[i % hitosdesabiduria.length];
+                cubo.setAttribute('data-frase', frase);
+                contenedor.appendChild(cubo);
+            }
+
+            const manager = nipplejs.create({
+                zone: document.getElementById('joystick-zone'),
+                mode: 'static',
+                position: { left: '75px', bottom: '75px' },
+                color: '#00f0ff',
+                size: 120
+            });
+
+            manager.on('move', (evt, data) => {
+                joystickData.vector.x = Math.cos(data.angle.radian);
+                joystickData.vector.y = Math.sin(data.angle.radian);
+            });
+
+            manager.on('end', () => { 
+                joystickData.vector.x = 0; joystickData.vector.y = 0; 
+            });
+
+            setTimeout(() => { permitirFinalizar = true; }, 3000);
+            gameLoop();
+        };
+
+        function gameLoop() {
+            const rig = document.getElementById('rig');
+            const camera = document.getElementById('camera');
+            
+            if (rig && camera) {
+                const speed = 0.15;
+                const rot = camera.getAttribute('rotation');
+                const angle = rot.y * (Math.PI / 180);
+
+                const moveX = joystickData.vector.x * speed;
+                const moveZ = -joystickData.vector.y * speed;
+
+                rig.object3D.position.x += moveX * Math.cos(angle) + moveZ * Math.sin(angle);
+                rig.object3D.position.z += moveZ * Math.cos(angle) - moveX * Math.sin(angle);
+            }
+
+            revisarDeteccion(document.getElementById('rig').object3D.position);
+            requestAnimationFrame(gameLoop);
+        }
+
+        function revisarDeteccion(posPlayer) {
+            const cubos = document.querySelectorAll('.cubo-lore');
+            const panel = document.getElementById('magic-panel');
+            let alguienCerca = false;
+
+            cubos.forEach(cubo => {
+                const cPos = cubo.object3D.position;
+                const dist = Math.hypot(posPlayer.x - cPos.x, posPlayer.z - cPos.z);
+                
+                if (dist < 3.5) {
+                    alguienCerca = true;
+                    if (ultimoCuboLeido !== cubo) {
+                        ultimoCuboLeido = cubo;
+                        const frase = cubo.getAttribute('data-frase');
+                        document.getElementById('lore-text-side').innerText = "💭 " + frase;
+                        panel.classList.add('active');
+                    }
+                }
+            });
+
+            if (!alguienCerca) {
+                panel.classList.remove('active');
+                ultimoCuboLeido = null;
+            }
+
+            const distMeta = Math.hypot(posPlayer.x, posPlayer.z + 22);
+            if (distMeta < 3 && permitirFinalizar) {
+                finalizarMision();
+            }
+        }
+
+        function finalizarMision() {
+            if (window.misionHecha) return;
+            window.misionHecha = true;
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            
+            if(id) {
+                db.ref('usuarios/' + id).update({
+                    nivel: firebase.database.ServerValue.increment(1),
+                    monedas: firebase.database.ServerValue.increment(10),
+                    estado_mision: "recompensa"
+                }).then(() => {
+                    alert("¡MAESTRÍA EN IMAGINACIÓN! Has restaurado el Reino Meta. +10 🪙");
+                    window.location.href = 'laberinto.html?id=' + id;
+                });
+            } else {
+                window.location.href = 'laberinto.html';
+            }
+        }
+    </script>
+</body>
+</html>

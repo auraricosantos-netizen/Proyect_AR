@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Quicksand:wght@500;700&display=swap');
+
+body { margin: 0; background: #1a3c1a; overflow: hidden; font-family: 'Quicksand', sans-serif; }
+canvas { display: block; filter: saturate(1.2); }
+
+#ui-layer { position: absolute; top: 15px; left: 15px; display: flex; gap: 15px; z-index: 50; }
+.stat-box { 
+    background: rgba(0,0,0,0.8); color: #f1c40f; padding: 10px 20px; 
+    border-radius: 15px; border: 2px solid #d4a017; font-weight: bold; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 100;
+}
+
+.carta-papel {
+    background: #fdf5e6; padding: 40px; border-radius: 5px; border: 8px double #8b4513;
+    max-width: 450px; text-align: center; color: #3e2723; box-shadow: 0 0 40px rgba(0,0,0,0.8);
+    position: relative; animation: slideUp 0.5s ease-out;
+}
+
+.carta-papel h2 { font-family: 'Cinzel', serif; margin-top: 0; color: #5d4037; }
+
+.btn-estacion {
+    background: #8b4513; color: white; border: none; padding: 12px 30px;
+    border-radius: 50px; font-weight: bold; cursor: pointer; margin: 10px;
+}
+
+#phrase-input {
+    width: 90%; padding: 12px; margin: 20px 0; border: 2px solid #8b4513;
+    border-radius: 8px; font-size: 16px; text-align: center;
+}
+
+.hint-text {
+    background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px;
+    margin-bottom: 15px; font-style: italic; border: 1px solid #ffeeba;
+}
+
+.medalla-container { text-align: center; color: white; }
+.medalla-oro { font-size: 120px; animation: glow 2s infinite alternate; }
+
+@keyframes glow { from { text-shadow: 0 0 20px gold; } to { text-shadow: 0 0 50px #f1c40f; } }
+@keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

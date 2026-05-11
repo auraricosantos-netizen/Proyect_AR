@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Fuerte de Investigación - Restauradores</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.1/nipplejs.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+        body { margin: 0; overflow: hidden; font-family: 'Montserrat', sans-serif; }
+        
+        #joystick-zone { position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; z-index: 10; touch-action: none; }
+
+        /* Ficha Informativa Superior */
+        #info-card {
+            display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            width: 85%; max-width: 450px; background: white; border-radius: 20px;
+            padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border-bottom: 8px solid #000; z-index: 100; text-align: center;
+            animation: slideDown 0.4s ease-out;
+        }
+        @keyframes slideDown { from { transform: translateX(-50%) translateY(-100%); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
+
+        #info-card .materia { color: #888; font-size: 0.7em; text-transform: uppercase; letter-spacing: 2px; }
+        #info-card h2 { margin: 5px 0; color: #222; font-size: 1.4em; }
+        #info-card p { color: #555; font-size: 0.9em; line-height: 1.5; }
+
+        /* Botón Final de Éxito */
+        #btn-final {
+            display: none; position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: #000; color: #00f2ff; border: 2px solid #00f2ff; padding: 15px 40px;
+            border-radius: 50px; font-weight: bold; cursor: pointer; z-index: 1000;
+            font-family: 'Montserrat'; box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
+        }
+        
+        #progreso { position: fixed; top: 15px; right: 20px; background: rgba(0,0,0,0.05); padding: 5px 15px; border-radius: 20px; font-weight: bold; color: #333; z-index: 100; }
+    </style>
+</head>
+<body>
+
+    <div id="progreso">🔬 Hallazgos: <span id="count">0</span> / 9</div>
+
+    <div id="info-card">
+        <div class="materia" id="card-materia">MATERIA</div>
+        <h2 id="card-titulo">TÍTULO</h2>
+        <p id="card-desc">Descripción...</p>
+    </div>
+
+    <button id="btn-final" onclick="finalizarNivel()">
+        ✨ INVESTIGACIÓN COMPLETADA: VOLVER
+    </button>
+
+    <div id="joystick-zone"></div>
+
+    <a-scene background="color: #f0f0f0" renderer="antialias: true">
+        <a-light type="ambient" intensity="0.8"></a-light>
+        <a-light type="directional" position="1 5 3" intensity="0.6"></a-light>
+
+        <a-plane position="0 0 0" rotation="-90 0 0" width="100" height="100" color="#999999"></a-plane>
+        <a-grid position="0 0.01 0" rotation="-90 0 0" width="100" height="100" opacity="0.1" color="#ffffff"></a-grid>
+
+        <a-entity id="estaciones-container"></a-entity>
+
+        <a-entity id="rig" position="0 0 5">
+            <a-camera id="camera" look-controls="pointerLockEnabled: false"></a-camera>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        const datos = [
+            { mat: "Ciencias", tit: "El Átomo", desc: "Base de la materia. Al activarse, revela el baile perpetuo de sus electrones.", pos: "-7 1.5 -6", obj: "atomo", color: "#e91e63" },
+            { mat: "Matemáticas", tit: "Fractal Áureo", desc: "El código numérico que diseña la perfección de la naturaleza.", pos: "0 1.5 -9", obj: "fractal", color: "#4caf50" },
+            { mat: "Español", tit: "El Libro Sagrado", desc: "Donde las letras cobran vida para contar la historia de la humanidad.", pos: "7 1.5 -6", obj: "libro", color: "#2196f3" },
+            { mat: "Inglés", tit: "The Global Link", desc: "English as the main tool to connect and share knowledge with the world.", pos: "-9 1.5 2", obj: "mundo", color: "#ff9800" },
+            { mat: "Sociales", tit: "Pirámide del Tiempo", desc: "Símbolo de las civilizaciones que forjaron nuestras raíces sociales.", pos: "9 1.5 2", obj: "piramide", color: "#795548" },
+            { mat: "Ética", tit: "La Balanza", desc: "Representa el juicio justo y la armonía entre nuestras acciones y valores.", pos: "0 1.5 8", obj: "balanza", color: "#9c27b0" },
+            { mat: "Filosofía", tit: "El Oráculo", desc: "Búsqueda de la verdad a través del pensamiento crítico y la reflexión profunda.", pos: "-6 1.5 7", obj: "columna", color: "#00bcd4" },
+            { mat: "Ed. Física", tit: "El Trofeo", desc: "Reconocimiento a la superación, la disciplina y el equilibrio corporal.", pos: "6 1.5 7", obj: "trofeo", color: "#ff5722" },
+            { mat: "Religión", tit: "Esencia Vital", desc: "La chispa de trascendencia que conecta al ser con su propósito último.", pos: "0 1.5 0", obj: "estrella", color: "#673ab7" }
+        ];
+
+        let descubiertos = new Set();
+        let joystickData = { vector: { x: 0, y: 0 } };
+        const container = document.getElementById('estaciones-container');
+
+        // GENERADOR DE OBJETOS SIMBÓLICOS
+        function crearObjetoMateria(tipo, color) {
+            let ent = document.createElement('a-entity');
+            if (tipo === "atomo") {
+                ent.innerHTML = `<a-sphere radius="0.3" color="red"></a-sphere>
+                                 <a-ring radius-inner="1" radius-outer="1.05" rotation="45 0 0" color="cyan"></a-ring>
+                                 <a-ring radius-inner="1" radius-outer="1.05" rotation="-45 90 0" color="cyan"></a-ring>`;
+            } else if (tipo === "fractal") {
+                ent.innerHTML = `<a-torus-knot radius="0.8" radius-tubular="0.05" p="2" q="3" color="${color}"></a-torus-knot>`;
+            } else if (tipo === "libro") {
+                ent.innerHTML = `<a-box width="1" height="1.4" depth="0.2" color="white"></a-box>
+                                 <a-box width="1.1" height="1.5" depth="0.05" position="0 0 -0.1" color="#5D4037"></a-box>`;
+            } else if (tipo === "mundo") {
+                ent.innerHTML = `<a-sphere radius="0.8" color="#1E88E5" opacity="0.6"></a-sphere>
+                                 <a-sphere radius="0.82" color="#43A047" wireframe="true"></a-sphere>`;
+            } else if (tipo === "piramide") {
+                ent.innerHTML = `<a-cone radius-bottom="1" height="1.5" color="${color}" segments-radial="4"></a-cone>`;
+            } else if (tipo === "balanza") {
+                ent.innerHTML = `<a-cylinder radius="0.05" height="1.5" color="#FFD700"></a-cylinder>
+                                 <a-box width="1.5" height="0.1" depth="0.1" position="0 0.7 0" color="#FFD700"></a-box>
+                                 <a-cone position="-0.7 0.4 0" rotation="180 0 0" radius-bottom="0.4" height="0.3" color="#C0C0C0"></a-cone>
+                                 <a-cone position="0.7 0.4 0" rotation="180 0 0" radius-bottom="0.4" height="0.3" color="#C0C0C0"></a-cone>`;
+            } else if (tipo === "columna") {
+                ent.innerHTML = `<a-cylinder radius="0.4" height="1.8" color="#EEE" segments-radial="8"></a-cylinder>
+                                 <a-box width="1.2" height="0.2" depth="1.2" position="0 0.9 0" color="#DDD"></a-box>`;
+            } else if (tipo === "trofeo") {
+                ent.innerHTML = `<a-cylinder radius="0.2" height="1" position="0 0.5 0" color="#FFD700"></a-cylinder>
+                                 <a-sphere radius="0.7" position="0 1.3 0" color="#FFD700"></a-sphere>`;
+            } else if (tipo === "estrella") {
+                ent.innerHTML = `<a-octahedron radius="0.8" color="#FFEB3B" material="emissive:#FFF176; emissiveIntensity:0.6"></a-octahedron>`;
+            }
+            ent.setAttribute('animation', 'property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear');
+            return ent;
+        }
+
+        // CREAR LAS ESTACIONES
+        datos.forEach((d, i) => {
+            const base = document.createElement('a-entity');
+            base.setAttribute('position', d.pos);
+            base.id = `estacion-${i}`;
+
+            // NÚCLEO NEGRO TRASLÚCIDO (Estado inicial)
+            const nucleo = document.createElement('a-sphere');
+            nucleo.setAttribute('radius', '0.45');
+            nucleo.setAttribute('color', '#000000');
+            nucleo.setAttribute('material', 'opacity: 0.5; transparent: true; emissive: #111');
+            nucleo.setAttribute('animation', 'property: scale; to: 1.1 1.1 1.1; dir: alternate; loop: true; dur: 1200');
+            nucleo.id = `nucleo-${i}`;
+            base.appendChild(nucleo);
+
+            // OBJETO REAL (Estado revelado)
+            const real = crearObjetoMateria(d.obj, d.color);
+            real.setAttribute('visible', 'false');
+            real.setAttribute('scale', '0.1 0.1 0.1');
+            real.id = `real-${i}`;
+            base.appendChild(real);
+
+            container.appendChild(base);
+        });
+
+        // JOYSTICK Y MOVIMIENTO
+        window.addEventListener('load', () => {
+            const manager = nipplejs.create({ zone: document.getElementById('joystick-zone'), mode: 'dynamic', color: '#000' });
+            manager.on('move', (e, data) => {
+                joystickData.vector.x = Math.cos(data.angle.radian);
+                joystickData.vector.y = Math.sin(data.angle.radian);
+            });
+            manager.on('end', () => { joystickData.vector.x = 0; joystickData.vector.y = 0; });
+            gameLoop();
+        });
+
+        function gameLoop() {
+            const rig = document.getElementById('rig');
+            const cam = document.getElementById('camera');
+            if (rig && cam) {
+                const pos = rig.getAttribute('position');
+                const rot = cam.getAttribute('rotation');
+                const angle = rot.y * (Math.PI / 180);
+                const moveX = joystickData.vector.x * 0.18; 
+                const moveZ = -joystickData.vector.y * 0.18;
+
+                pos.x += moveX * Math.cos(angle) + moveZ * Math.sin(angle);
+                pos.z += moveZ * Math.cos(angle) - moveX * Math.sin(angle);
+                rig.setAttribute('position', pos);
+
+                chequearProximidad(pos);
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function chequearProximidad(pPos) {
+            let algoCerca = false;
+            datos.forEach((d, i) => {
+                const dPos = d.pos.split(' ');
+                const dist = Math.hypot(pPos.x - dPos[0], pPos.z - dPos[2]);
+
+                const nucleo = document.getElementById(`nucleo-${i}`);
+                const real = document.getElementById(`real-${i}`);
+
+                if (dist < 2.8) {
+                    algoCerca = true;
+                    // REVELACIÓN PERMANENTE
+                    if (nucleo.getAttribute('visible') !== 'false') {
+                        nucleo.setAttribute('visible', 'false');
+                        real.setAttribute('visible', 'true');
+                        real.setAttribute('animation__scale', 'property: scale; to: 1.3 1.3 1.3; dur: 600');
+                        
+                        if (!descubiertos.has(i)) {
+                            descubiertos.add(i);
+                            document.getElementById('count').innerText = descubiertos.size;
+                            if(descubiertos.size === 9) document.getElementById('btn-final').style.display = 'block';
+                        }
+                    }
+
+                    // Actualizar Ficha HUD
+                    document.getElementById('card-materia').innerText = d.mat;
+                    document.getElementById('card-titulo').innerText = d.tit;
+                    document.getElementById('card-desc').innerText = d.desc;
+                    document.getElementById('info-card').style.display = 'block';
+                    document.getElementById('info-card').style.borderBottomColor = d.color;
+                }
+            });
+            if (!algoCerca) document.getElementById('info-card').style.display = 'none';
+        }
+
+        function finalizarNivel() {
+            db.ref('usuarios/' + userId).update({ nivel: 7, estado_mision: "recompensa", monedas: firebase.database.ServerValue.increment(10) }).then(() => {
+                alert("¡NIVEL RESTAURADO! Has desbloqueado el conocimiento total. ¡Has ganado 10 monedas 🪙​!");
+                window.location.href = 'laberinto.html?id=' + userId;
+            });
+        }
+    </script>
+</body>
+</html>
