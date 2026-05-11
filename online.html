@@ -156,28 +156,57 @@
         
         let misDatosMision = { fragmentos: [], pasos: 0 };
 
-        // --- MEGA BANCO DE DATOS ---
-        const megaBanco = {
-            "2": [
-                ["INTEGRIDAD EN DATOS", "RESULTADOS CONFIABLES"],
-                ["SISTEMAS CONTABLES", "TRANSPARENCIA TOTAL"],
-                ["ACTIVOS DIGITALES", "FLUJO CONSTANTE"],
-                ["CÓDIGO FUENTE", "BASE DEL CAMBIO"],
-                ["AUDITORÍA REAL", "SINCRONÍA LOGRADA"]
-            ],
-            "3": [
-                ["EL CONOCIMIENTO", "NO DEBE OCULTARSE", "DEBE HACERSE VISIBLE"],
-                ["PROCESAR INFORMACIÓN", "CON ÉTICA PROFESIONAL", "GENERA VALOR REAL"]
-            ],
-            "4": [
-                ["AUTOMATIZAR PROCESOS", "LIBERA EL TIEMPO", "PARA EL ANÁLISIS", "DE ALTO NIVEL"],
-                ["CADA REGISTRO", "ES UN ESLABÓN", "DE LA CONFIANZA", "EMPRESARIAL"]
-            ],
-            "5": [
-                ["EL FLUJO", "DE LA", "INFORMACIÓN FINANCIERA", "DEBE SER", "SIEMPRE VERIFICABLE"]
-            ]
-        };
-
+       // --- MEGA BANCO EXTENDIDO: TEMÁTICA EL BOSQUE MÁGICO ---
+const megaBanco = {
+    "2": [
+        ["UNIÓN MÁGICA ES", "FUERZA DEL BOSQUE"],
+        ["ESPÍRITUS UNIDOS", "UN DESTINO COMPARTIDO"],
+        ["LUZ ANCESTRAL", "GUÍA NUESTROS PASOS"],
+        ["RESTAURADORES", "EL EQUILIBRIO VUELVE"],
+        ["EL BOSQUE", "SIEMPRE RECUERDA"],
+        ["PORTAL ABIERTO", "MAGIA FLUYENDO"],
+        ["RAÍCES FUERTES", "ALMAS CONECTADAS"],
+        ["VIENTO SABIO", "SUSURRO ETERNO"],
+        ["SUEÑO MÁGICO", "REALIDAD UNIDA"],
+        ["SOMBRAS FUERA", "CLARIDAD INTERIOR"]
+    ],
+    "3": [
+        ["SOLO EN UNIÓN", "LOS RESTAURADORES", "LOGRAN LA PAZ"],
+        ["CADA PALABRA", "ES UN HECHIZO", "PARA EL BOSQUE"],
+        ["LA MAGIA CRECE", "CUANDO TODOS", "ACTÚAN COMO UNO"],
+        ["SOMOS LA VOZ", "DEL ÁRBOL", "DE LA VIDA"],
+        ["CORAZÓN DE ROBLE", "MENTE DE AGUA", "ESPÍRITU DE FUEGO"],
+        ["EL CAMINO OSCURO", "SE ILUMINA CON", "NUESTRA AMISTAD"],
+        ["TRES DESTINOS", "UNA SOLA", "MISIÓN SAGRADA"],
+        ["PROTEGE EL REINO", "CON LA FUERZA", "DE LA SINCRONÍA"],
+        ["LA NATURALEZA", "ESPERA NUESTRA", "AYUDA DIVINA"],
+        ["QUE LA LUZ", "BORRE TODA", "LA OSCURIDAD"]
+    ],
+    "4": [
+        ["CUANDO EL BOSQUE", "SE OSCURECE", "NUESTRA AMISTAD", "ES LA LUZ"],
+        ["LA SINCRONÍA", "ES EL LENGUAJE", "DE LAS HADAS", "Y PROTECTORES"],
+        ["NADIE SE QUEDA", "ATRÁS EN", "ESTA GRAN", "MISIÓN MÁGICA"],
+        ["CUATRO ELEMENTOS", "REUNIDOS PARA", "RESTAURAR EL", "ORDEN PERDIDO"],
+        ["LOS ANTIGUOS", "NOS OBSERVAN", "DESDE LAS", "ESTRELLAS GUÍA"],
+        ["CONECTA TU", "ESENCIA CON", "EL LATIDO", "DE LA TIERRA"],
+        ["EL PODER", "VERDADERO NACE", "DE LA", "CONFIANZA MUTUA"],
+        ["QUE NINGUNA", "SOMBRA DIVIDA", "LO QUE LA", "MAGIA UNIÓN"],
+        ["RESTAURAR LA", "ESENCIA ES", "TRABAJO DE", "VERDADEROS HÉROES"],
+        ["EL EQUILIBRIO", "FINAL ESTÁ", "MUY CERCA", "DE LOGRARSE"]
+    ],
+    "5": [
+        ["LA", "ESENCIA", "DE LA SINCRONÍA", "RESTAURA", "EL CORAZÓN DEL BOSQUE"],
+        ["SOLO", "CONECTANDO", "TODAS LAS ALMAS", "DESPERTARÁ", "EL GUARDIÁN DORMIDO"],
+        ["CADA", "UNO DE", "NOSOTROS ES", "UNA PIEZA", "DEL ROMPECABEZAS SAGRADO"],
+        ["LA", "MAGIA", "MÁS PODEROSA", "ES LA", "QUE SE COMPARTE"],
+        ["SI", "TODOS", "CAMINAMOS JUNTOS", "EL", "DESTINO SERÁ NUESTRO"],
+        ["BAJO", "LA", "SOMBRA DEL ÁRBOL", "HACEMOS", "NUESTRO JURAMENTO ETERNO"],
+        ["SIN", "DUDAS", "EN EL CORAZÓN", "AVANZAMOS", "HACIA LA VICTORIA"],
+        ["LA", "LUZ", "DE LOS CINCO", "VENCE", "CUALQUIER MALDICIÓN ANTIGUA"],
+        ["EL", "SABIO", "BOSQUE NOS DARÁ", "LAS", "RESPUESTAS QUE BUSCAMOS"],
+        ["LA", "PAZ", "FINAL LLEGARÁ", "CON", "NUESTRA TOTAL SINCRONÍA"]
+    ]
+};
         // --- SISTEMA DE PRESENCIA ---
         const miNodoPresencia = presenciaRef.push(true);
         miNodoPresencia.onDisconnect().remove();
