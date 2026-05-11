@@ -132,12 +132,16 @@
     </div>
 
     <button id="btn-final" class="btn-return" onclick="finalizarMision()">ESPERANDO SINCRONÍA</button>
-
-    <button onclick="forzarVictoria()" style="position:fixed; bottom:5px; right:5px; opacity:0.3; font-size:10px; background:none; border:1px solid #333; color:gray; cursor:pointer;">
-        DEBUG: FORZAR SINCRONÍA
-    </button>
+    
+    
 
     <script>
+        
+        // arriba fuera del scrib el forzar boton (Aqui)
+        //<button onclick="forzarVictoria()" style="position:fixed; bottom:5px; right:5px; opacity:0.3; font-size:10px; background:none; border:1px solid #333; color:gray; cursor:pointer;">
+        //DEBUG: FORZAR SINCRONÍA
+        //</button>
+        
     // 1. Esperar a que todo el HTML cargue
     window.addEventListener('load', () => {
         
@@ -282,13 +286,13 @@
             });
         };
 
-        window.forzarVictoria = function() {
-            window.misionCompletada = true;
-            const btn = document.getElementById('btn-final');
-            btn.innerText = "¡DEBUG MODE! VOLVER";
-            btn.classList.add('success-mode');
-            document.getElementById('status-icon').innerText = "🛠️";
-        };
+        //window.forzarVictoria = function() {
+           // window.misionCompletada = true;
+            //const btn = document.getElementById('btn-final');
+            //btn.innerText = "¡DEBUG MODE! VOLVER";
+            //btn.classList.add('success-mode');
+            //document.getElementById('status-icon').innerText = "🛠️";
+        //};
     });
 </script>
 </body>
