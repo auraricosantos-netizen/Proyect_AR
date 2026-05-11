@@ -21,22 +21,7 @@
         /* Contenedor del Joystick */
         #joystick-container { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; pointer-events: auto; }
         /* --- PANEL MÍSTICO DE QUIVER --- */
-#ui-side-panel, #magic-panel {
-        position: fixed; 
-        top: 0; 
-        right: 0; 
-        width: 380px; 
-        height: 100%;
-        background: rgba(255, 255, 255, 0.9); 
-        backdrop-filter: blur(15px);
-        display: flex; 
-        flex-direction: column; 
-        justify-content: center;
-        padding: 40px; 
-        box-sizing: border-box; 
-        z-index: 10; /* Bajamos un poco el nivel del panel */
-        border-left: 2px solid #ff4d4d;
-    }
+       
         
      #magic-panel-quiver {
     position: fixed;
@@ -83,6 +68,22 @@
     text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
     font-weight: bold;
 }
+         #ui-side-panel, #magic-panel {
+        position: fixed; 
+        top: 0; 
+        right: 0; 
+        width: 380px; 
+        height: 100%;
+        background: rgba(255, 255, 255, 0.9); 
+        backdrop-filter: blur(15px);
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center;
+        padding: 40px; 
+        box-sizing: border-box; 
+        z-index: 10; /* Bajamos un poco el nivel del panel */
+        border-left: 2px solid #ff4d4d;
+    }
          .nav-controls, .controls {
         position: fixed; 
         bottom: 40px; 
@@ -93,23 +94,29 @@
     }
         @media (max-width: 800px) {
         #ui-side-panel, #magic-panel {
-            width: 100%; 
+            width: 90%; 
             height: 30%; /* Reducimos el alto para que no suba tanto */
-            top: 0; /* Lo movemos al techo de la pantalla */
+            top: 20px;/* Lo movemos al techo de la pantalla */
+            right: 5%;
+            left: 5%;
             bottom: auto;
-            padding: 15px; 
+            padding: 20px; 
             border-left: none; 
-            border-bottom: 3px solid #ff4d4d; 
+            border-bottom: 3px solid #ff4d4d;
+            border-radius: 15;
+            justify-content: flex-star;
+            overflow-y: auto;
         }
 
         .nav-controls, .controls {
-            bottom: 30px; /* Los botones se quedan bien abajo */
+            bottom: 20px; /* Los botones se quedan bien abajo */
             left: 50%; 
             transform: translateX(-50%); 
-            width: 90%; 
-            justify-content: center;
+            width: 95%; 
+            justify-content: space-around;
         }
-
+h1 {font-size: 1.4em !important;}
+            p {font-size: 0.9em !important; margin-bottom: o;}
         /* Si usas joystick, asegúrate de que también tenga z-index alto */
         #joystick-zone {
             z-index: 3000 !important;
