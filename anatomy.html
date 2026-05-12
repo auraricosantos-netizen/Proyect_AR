@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Sagrario de la Vida - Galería Anatómica</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Orbitron:wght@500&display=swap');
+        
+        body { margin: 0; overflow: hidden; font-family: 'Montserrat', sans-serif; background: #f0f0f0; }
+
+        /* Panel de Información Lateral */
+        #ui-side-panel {
+            position: fixed; top: 0; right: 0; width: 380px; height: 100%;
+            background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px);
+            display: flex; flex-direction: column; justify-content: center;
+            padding: 40px; box-sizing: border-box; z-index: 100;
+            border-left: 2px solid #ff4d4d; box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+        }
+
+        .materia-tag { color: #ff4d4d; font-size: 0.8em; letter-spacing: 3px; text-transform: uppercase; font-weight: bold; }
+        h1 { font-family: 'Orbitron'; margin: 10px 0; color: #222; font-size: 1.8em; }
+        .function-label { font-weight: bold; color: #444; margin-top: 20px; display: block; text-transform: uppercase; font-size: 0.8em; }
+        p { color: #666; line-height: 1.6; margin-top: 5px; font-size: 1em; }
+
+        /* Controles de Navegación */
+        .nav-controls {
+            position: fixed; bottom: 40px; left: 40px; display: flex; gap: 20px; z-index: 200;
+        }
+
+        button {
+            padding: 15px 35px; border-radius: 50px; border: none; font-weight: bold;
+            font-family: 'Montserrat'; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-size: 0.9em;
+        }
+
+        .btn-nav { background: white; color: #333; border: 1px solid #ddd; }
+        .btn-nav:hover { background: #fdfdfd; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+        .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+        .btn-final { background: #ff4d4d; color: white; display: none; }
+        .btn-final:hover { background: #ff3333; box-shadow: 0 0 20px rgba(255, 77, 77, 0.5); transform: scale(1.05); }
+
+        /* Adaptación para móviles */
+        @media (max-width: 800px) {
+            #ui-side-panel { width: 100%; height: 38%; top: auto; bottom: 0; padding: 20px; border-left: none; border-top: 4px solid #ff4d4d; }
+            .nav-controls { bottom: 40%; left: 50%; transform: translateX(-50%); width: 90%; justify-content: center; }
+            h1 { font-size: 1.4em; }
+            p { font-size: 0.9em; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-side-panel">
+        <div class="materia-tag" id="label-sistema">SISTEMA</div>
+        <h1 id="label-organo">ÓRGANO</h1>
+        <span class="function-label">Función Vital:</span>
+        <p id="label-descripcion">Cargando datos biológicos...</p>
+    </div>
+
+    <div class="nav-controls">
+        <button id="btn-prev" class="btn-nav" onclick="navegar(-1)" disabled>ANTERIOR</button>
+        <button id="btn-next" class="btn-nav" onclick="navegar(1)">SIGUIENTE</button>
+        <button id="btn-finish" class="btn-final" onclick="finalizarAnatomia()">FINALIZAR RESTAURACIÓN</button>
+    </div>
+
+    <a-scene background="color: #f0f0f0" embedded style="height: 100vh; width: 100vw;">
+        <a-light type="ambient" intensity="0.8"></a-light>
+        <a-light type="directional" position="2 4 3" intensity="0.6"></a-light>
+
+        <a-plane position="0 0 0" rotation="-90 0 0" width="100" height="100" color="#999999"></a-plane>
+        <a-grid position="0 0.01 0" rotation="-90 0 0" width="100" height="100" opacity="0.1" color="#ffffff"></a-grid>
+
+        <a-cylinder position="0 0.4 -3" radius="1.2" height="0.8" color="#eeeeee" metalness="0.5"></a-cylinder>
+
+        <a-entity id="anchor-organo" position="0 1.8 -3" animation="property: rotation; to: 0 360 0; loop: true; dur: 12000; easing: linear">
+            </a-entity>
+
+        <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
+    </a-scene>
+
+    <script>
+    const catalogo = [
+        { 
+            sis: "Sistema Circulatorio", 
+            nom: "El Corazón", 
+            desc: "Es el motor rítmico que impulsa la sangre oxigenada a todo el cuerpo, asegurando que cada célula reciba energía.", 
+            html: `<a-sphere radius="0.5" color="#ff4d4d" animation="property: scale; to: 1.1 1.1 1.1; dir: alternate; loop: true; dur: 450; easing: easeInOutQuad"></a-sphere>
+                   <a-cylinder position="0.2 0.5 0" radius="0.1" height="0.6" color="#d32f2f"></a-cylinder>`
+        },
+        { 
+            sis: "Sistema Respiratorio", 
+            nom: "Los Pulmones", 
+            desc: "Encargados del intercambio gaseoso: absorben el oxígeno del aire y eliminan el dióxido de carbono del torrente sanguíneo.", 
+            html: `<a-sphere position="-0.4 0 0" radius="0.45" color="#ff8e8e" scale="0.8 1.2 0.8"></a-sphere>
+                   <a-sphere position="0.4 0 0" radius="0.45" color="#ff8e8e" scale="0.8 1.2 0.8"></a-sphere>
+                   <a-cylinder position="0 0.6 0" radius="0.08" height="0.8" color="#ffbaba"></a-cylinder>`
+        },
+        { 
+            sis: "Sistema Nervioso", 
+            nom: "El Cerebro", 
+            desc: "El centro de control supremo. Procesa la información sensorial, genera pensamientos y coordina todas las funciones corporales.", 
+            html: `<a-ellipsoid radius="0.7 0.5 0.6" color="#e1bee7" material="roughness: 0.8"></a-ellipsoid>
+                   <a-box width="0.02" height="1" depth="1.2" color="#ce93d8" opacity="0.5"></a-box>`
+        },
+        { 
+            sis: "Sistema Digestivo", 
+            nom: "El Estómago", 
+            desc: "Un saco muscular donde los alimentos se mezclan con jugos gástricos para descomponerse en nutrientes absorbibles.", 
+            html: `<a-sphere radius="0.5" color="#ffcc80" scale="1.2 0.8 1"></a-sphere>
+                   <a-cylinder position="0.3 0.4 0" rotation="0 0 -45" radius="0.1" height="0.6" color="#ffa726"></a-cylinder>`
+        },
+        { 
+            sis: "Sistema Óseo", 
+            nom: "La Columna Vertebral", 
+            desc: "El eje central que sostiene nuestro cuerpo y protege la médula espinal, permitiendo la movilidad y el equilibrio.", 
+            html: `<a-cylinder radius="0.15" height="2" color="#f5f5f5" segments-radial="6"></a-cylinder>
+                   <a-torus radius="0.2" radius-tubular="0.02" rotation="90 0 0" position="0 0.4 0" color="#e0e0e0"></a-torus>
+                   <a-torus radius="0.2" radius-tubular="0.02" rotation="90 0 0" position="0 -0.4 0" color="#e0e0e0"></a-torus>`
+        },
+        // --- NUEVA SECCIÓN FINAL ---
+        { 
+            sis: "Realidad Aumentada", 
+            nom: "AR ANATOMY", 
+            desc: "Vive la anatomía en realidad aumentada con AR Anatomy.", 
+            html: `
+                <a-sphere radius="0.6" color="#ffdbac" scale="0.9 1.2 0.8"></a-sphere>
+                <a-cylinder position="0 -0.8 0" radius="0.22" height="0.5" color="#ffdbac"></a-cylinder>
+                <a-sphere position="0.2 0.2 0.4" radius="0.05" color="#333"></a-sphere>
+                <a-sphere position="-0.2 0.2 0.4" radius="0.05" color="#333"></a-sphere>
+                <a-torus position="0.45 0.1 0" radius="0.15" radius-tubular="0.02" rotation="0 90 0" color="#ff4d4d"></a-torus>
+                <a-torus position="-0.45 0.1 0" radius="0.15" radius-tubular="0.02" rotation="0 90 0" color="#ff4d4d"></a-torus>
+            `
+        }
+    ];
+
+    let iActual = 0;
+    const anchor = document.getElementById('anchor-organo');
+
+    function actualizarPantalla() {
+        const item = catalogo[iActual];
+        
+        // Actualizar Interfaz
+        document.getElementById('label-sistema').innerText = item.sis;
+        document.getElementById('label-organo').innerText = item.nom;
+        document.getElementById('label-descripcion').innerText = item.desc;
+
+        // Inyectar Órgano / Figura 3D
+        anchor.innerHTML = item.html;
+
+        // Lógica de Botones
+        document.getElementById('btn-prev').disabled = (iActual === 0);
+        
+        // El botón finalizar solo aparece en la última posición (AR ANATOMY)
+        if (iActual === catalogo.length - 1) {
+            document.getElementById('btn-next').style.display = "none";
+            document.getElementById('btn-finish').style.display = "block";
+        } else {
+            document.getElementById('btn-next').style.display = "block";
+            document.getElementById('btn-finish').style.display = "none";
+        }
+    }
+
+    function navegar(dir) {
+        iActual += dir;
+        actualizarPantalla();
+    }
+
+    function finalizarAnatomia() {
+        if(typeof userId !== 'undefined' && userId) {
+            // Sube al nivel 8 y otorga las monedas
+            db.ref('usuarios/' + userId).update({ 
+                nivel: 8, 
+                estado_mision: "recompensa", 
+                monedas: firebase.database.ServerValue.increment(10) 
+            }).then(() => {
+                alert("¡SABIDURÍA ANATÓMICA RESTAURADA! Has descubierto el poder de AR ANATOMY. ¡Ganaste 10 monedas 🪙!");
+                window.location.href = 'laberinto.html?id=' + userId;
+            });
+        } else {
+            window.location.href = 'laberinto.html';
+        }
+    }
+
+    window.onload = actualizarPantalla;
+</script>
+    
+</body>
+</html>
