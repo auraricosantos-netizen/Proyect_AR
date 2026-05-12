@@ -308,12 +308,14 @@
     if(typeof db !== 'undefined' && typeof userId !== 'undefined') {
         db.ref('usuarios/' + userId).update({
             nivel: 11,
-            estado_mision: "recompensa", 
+            estado_mision: "completado", 
+
             monedas: firebase.database.ServerValue.increment(10), 
             nota_final: score,
             // GUARDAMOS LA HORA EXACTA DE LLEGADA
-            fecha_fin: firebase.database.ServerValue.TIMESTAMP 
+            fecha_fin: Date.now() 
         }).then(() => { 
+            
             window.location.href = 'victoria.html?id=' + userId; 
         });
     } else {
