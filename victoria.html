@@ -6,6 +6,7 @@
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
     <script src="firebase-config.js"></script>
 
     <style>
@@ -38,15 +39,14 @@
         .ranking-table th { background: #ffd700; color: #050510; padding: 15px; font-family: 'Cinzel'; }
         .ranking-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: bold; }
         
-        /* Resaltado para el usuario actual */
-        .highlight { background: rgba(255, 215, 0, 0.2) !important; color: #ffd700; }
+        .highlight { background: rgba(255, 215, 0, 0.3) !important; color: #ffd700; border-left: 5px solid #ffd700; }
 
         .btn-reset {
-            background: #8b0000; color: white; border: none; padding: 10px 20px;
-            border-radius: 5px; cursor: pointer; margin-top: 40px; font-family: 'Cinzel';
-            opacity: 0.6; transition: 0.3s;
+            background: #2e7d32; color: white; border: none; padding: 15px 30px;
+            border-radius: 50px; cursor: pointer; margin-top: 40px; font-family: 'Cinzel';
+            font-weight: bold; transition: 0.3s;
         }
-        .btn-reset:hover { opacity: 1; transform: scale(1.05); }
+        .btn-reset:hover { background: #1b5e20; transform: scale(1.05); box-shadow: 0 0 20px #2e7d32; }
 
         .emoji-mini { font-size: 1.5rem; vertical-align: middle; margin-right: 8px; }
     </style>
@@ -55,88 +55,165 @@
 
     <div class="victoria-card">
         <h1>🏆 Salón de la Fama 🏆</h1>
-        <p>Los Restauradores que han devuelto el equilibrio al bosque.</p>
+        <p>Restauradores que han completado la odisea por orden de llegada.</p>
 
         <table class="ranking-table">
             <thead>
                 <tr>
-                    <th>Rango</th>
+                    <th>Lugar</th>
                     <th>Restaurador</th>
                     <th>Maestría</th>
                     <th>Tesoro</th>
                 </tr>
             </thead>
             <tbody id="ranking-body">
-                </tbody>
+                <tr><td colspan="4">Consultando el pergamino sagrado...</td></tr>
+            </tbody>
         </table>
 
-        <button class="btn-reset" onclick="finalizarYBorrar()">🔥 DISOLVER VÍNCULO Y SALIR</button>
+        <button class="btn-reset" onclick="finalizarYBorrar()">🏠 VOLVER AL INICIO</button>
     </div>
 
     <script>
-    // 1. Obtener el ID del usuario (asegúrate de que userId esté disponible)
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get('id');
+        // Nota: userId ya viene definido desde firebase-config.js globalmente
 
-    function cargarRanking() {
-    // 1. Consultamos por 'fecha_fin' (orden cronológico)
-    // limitToFirst(15) trae a los 15 que llegaron primero
-    db.ref('usuarios')
-      .orderByChild('fecha_fin')
-      .limitToFirst(15) 
-      .on('value', snap => {
-        const body = document.getElementById('ranking-body');
-        body.innerHTML = "";
-        
-        let usuarios = [];
-        snap.forEach(child => {
-            const data = child.val();
-            // Solo incluimos a los que ya tienen fecha de fin registrada
-            if (data.fecha_fin) {
-                usuarios.push({ id: child.key, ...data });
-            }
-        });
-
-        // No hace falta .reverse() porque queremos que el menor tiempo (el primero) esté arriba
-        usuarios.forEach((user, i) => {
-            const row = document.createElement('tr');
-            
-            // 2. RESALTADO: Si el ID coincide con el usuario actual
-            if (user.id === userId) {
-                row.className = "highlight";
-            }
-            
-            row.innerHTML = `
-                <td>${i + 1}°</td>
-                <td>
-                    <span class="emoji-mini">${user.emoji || '🧙‍♂️'}</span> 
-                    ${user.nombre} ${user.id === userId ? "<strong>(TÚ)</strong>" : ""}
-                </td>
-                <td>${user.nota_final || 0} / 10</td>
-                <td style="color: #ffd700;">${user.monedas || 0} 🪙</td>
-            `;
-            body.appendChild(row);
-        });
-    });
-}
-
-    function finalizarYBorrar() {
-        // Usamos el alert "mágico" que definiste en tu config si quieres, o el confirm normal
-        if (confirm("¿Estás seguro de que deseas disolver tu vínculo? Tu progreso se borrará para siempre.")) {
-            if (userId && userId !== 'invitado') {
-                db.ref('usuarios/' + userId).remove().then(() => {
-                    window.location.href = 'index.html';
+        function cargarRanking() {
+            // Usamos 'db' que ya está inicializada en tu firebase-config.js
+            db.ref('usuarios').on('value', snap => {
+                const body = document.getElementById('ranking-body');
+                body.innerHTML = "";
+                
+                let ganadores = [];
+                
+                snap.forEach(child => {
+                    const d = child.val();
+                    // Filtro flexible: acepta completado, recompensa o nivel alto
+                    if (d.estado_mision === "completado" || d.estado_mision === "recompensa" || d.nivel > 10) {
+                        ganadores.push({ id: child.key, ...d });
+                    }
                 });
-            } else {
+
+                // ORDENAR POR TIEMPO REAL
+                ganadores.sort((a, b) => {
+                    // Convertimos a número. Si es el texto "ServerValue.TIMESTAMP", Number dará NaN
+                    let tiempoA = Number(a.fecha_fin);
+                    let tiempoB = Number(b.fecha_fin);
+
+                    // Si uno es NaN (dato corrupto), lo mandamos al final
+                    if (isNaN(tiempoA)) return 1;
+                    if (isNaN(tiempoB)) return -1;
+
+                    return tiempoA - tiempoB; // Menor tiempo (llegó antes) va primero
+                });
+
+                // Mostrar los 10 mejores
+                ganadores.slice(0, 10).forEach((user, i) => {
+                    const row = document.createElement('tr');
+                    
+                    // Resaltar si el ID coincide con el que traemos por URL
+                    if (user.id === userId) row.className = "highlight";
+                    
+                    row.innerHTML = `
+                        <td>${i + 1}°</td>
+                        <td>
+                            <span class="emoji-mini">${user.emoji || '🧙‍♂️'}</span> 
+                            ${user.nombre || 'Anónimo'} ${user.id === userId ? "<strong>(TÚ)</strong>" : ""}
+                        </td>
+                        <td>${user.nota_final || 0} / 10</td>
+                        <td style="color: #ffd700;">${user.monedas || 0} 🪙</td>
+                    `;
+                    body.appendChild(row);
+                });
+
+                if (ganadores.length === 0) {
+                    body.innerHTML = "<tr><td colspan='4'>Aún no hay leyendas en este bosque.</td></tr>";
+                }
+            });
+        }
+
+        async function finalizarYBorrar() {
+    // Explicamos al usuario que esto libera su nombre para volver a jugar
+    if (confirm("¿Estás seguro de que deseas disolver tu vínculo? Tu nombre quedará libre para una nueva partida y se borrará tu rastro en el chat.")) {
+        
+        if (userId && userId !== 'invitado') {
+            try {
+                // 1. Borramos sus mensajes del chat para no dejar basura
+                const snapChat = await db.ref('chat_sincronia').orderByChild('userId').equalTo(userId).once('value');
+                const updates = {};
+                snapChat.forEach(child => {
+                    updates[child.key] = null;
+                });
+                await db.ref('chat_sincronia').update(updates);
+
+                // 2. ¡LO MÁS IMPORTANTE!: Borramos el registro del usuario
+                // Al borrarlo aquí, la próxima vez que inicie sesión con el mismo nombre, 
+                // NO existirá en nivel 11, sino que se creará de cero en nivel 1.
+                await db.ref('usuarios/' + userId).remove();
+
+                console.log("Usuario y chat eliminados. Espacio liberado.");
+                
+                // 3. Volvemos al inicio
+                window.location.href = 'index.html';
+
+            } catch (error) {
+                console.error("Error en la limpieza mágica:", error);
                 window.location.href = 'index.html';
             }
+        } else {
+            window.location.href = 'index.html';
         }
     }
+}
+// Función para reemplazar el confirm nativo con uno con estilo de pergamino
+window.confirmarMistico = function(mensaje) {
+    return new Promise((resolve) => {
+        // Crear el overlay (fondo oscuro)
+        const overlay = document.createElement('div');
+        overlay.className = 'magic-alert-overlay'; // Reutilizamos tus estilos existentes
+        
+        overlay.innerHTML = `
+            <div class="magic-alert-box">
+                <h2>📜 Decisión Trascendental</h2>
+                <p>${mensaje}</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button id="btn-confirm-si" class="magic-alert-btn" style="background: #8b0000;">DISOLVER</button>
+                    <button id="btn-confirm-no" class="magic-alert-btn" style="background: #2e4c2e;">PERMANECER</button>
+                </div>
+            </div>
+        `;
 
-    window.onload = () => {
-        // Pequeña espera para asegurar que Firebase cargó
-        setTimeout(cargarRanking, 500);
-    };
-</script>
+        document.body.appendChild(overlay);
+
+        // Animación de entrada
+        setTimeout(() => {
+            overlay.style.opacity = "1";
+            overlay.querySelector('.magic-alert-box').style.transform = "scale(1)";
+        }, 10);
+
+        // Lógica de los botones
+        overlay.querySelector('#btn-confirm-si').onclick = () => {
+            cerrarConfirm(true);
+        };
+
+        overlay.querySelector('#btn-confirm-no').onclick = () => {
+            cerrarConfirm(false);
+        };
+
+        const cerrarConfirm = (resultado) => {
+            overlay.style.opacity = "0";
+            overlay.querySelector('.magic-alert-box').style.transform = "scale(0.7)";
+            setTimeout(() => { 
+                overlay.remove(); 
+                resolve(resultado); // Retornamos la respuesta
+            }, 300);
+        };
+    });
+};
+        // Ejecutamos la carga
+        window.onload = () => {
+            // Damos un momento para que firebase-config.js termine de procesar el userId
+            setTimeout(cargarRanking, 600);
+        };
+    </script>
 </body>
 </html>
