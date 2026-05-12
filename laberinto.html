@@ -409,27 +409,27 @@ const sesiones = {
                 ctx.font = "bold 12px Orbitron"; ctx.fillText(sesiones[n].titulo.toUpperCase(), ex, ey + 45);
             });
 
-            // 5. Jugador y Movimiento
-            // 5. Jugador y Movimiento
-        if (empezarViaje) {
+           // DENTRO DE LA FUNCIÓN draw()
+            if (empezarViaje) {
      let targetEst = estaciones[nivelActual - 1] || estaciones[0];
      let tx = targetEst.x * canvas.width;
-        let ty = targetEst.y * canvas.height;
+     let ty = targetEst.y * canvas.height;
 
-     player.x += (tx - player.x) * player.speed;
-        player.y += (ty - player.y) * player.speed;
+    // Movimiento fluido
+    player.x += (tx - player.x) * player.speed;
+    player.y += (ty - player.y) * player.speed;
 
     let distancia = Math.hypot(tx - player.x, ty - player.y);
     
-    // Solo mostramos la misión si el jugador llega por primera vez o no ha sido activada
-    if (distancia < 5 && !misionActiva && !window.misionMostrada) {
+    // Si llegamos a la estación y no hay una misión abierta
+    if (distancia < 2 && !misionActiva && !window.misionMostrada) {
         mostrarMision();
         misionActiva = true;
-        window.misionMostrada = true; // Flag para que no se repita en bucle
+        window.misionMostrada = true; // Bloquea la repetición
     }
     
-    // Si subimos de nivel, reseteamos el flag para la siguiente estación
-    if (distancia > 50) {
+    // Si el nivel cambia, permitimos que se muestre la nueva misión
+    if (distancia > 20) {
         window.misionMostrada = false;
     }
 }
@@ -441,16 +441,39 @@ const sesiones = {
 
             requestAnimationFrame(draw);
         }
+    //lanzar el pergamino
 
-        // NUEVA FUNCIÓN: DISPARAR EL PERGAMINO BONITO
-        function lanzarPergamino() {
-        const scroll = document.getElementById('reward-scroll');
-        scroll.classList.add('show');
-        setTimeout(() => { scroll.classList.remove('show'); }, 4500);
+   function lanzarPergamino() {
+    const scroll = document.getElementById('reward-scroll');
+    scroll.classList.add('show');
+    
+    // Actualizamos el contador visual de inmediato
+    let countElt = document.getElementById("monedas-count");
+    let actuales = parseInt(countElt.innerText);
+    countElt.innerText = actuales + 10;
+
+    setTimeout(() => { 
+        scroll.classList.remove('show'); 
+    }, 4500);
 }
+
         // CONTROL DE INTERFAZ
-        function iniciarAventura() {
+       function iniciarAventura() {
             document.getElementById('modal-bienvenida').style.display = 'none';
+            
+            // Si ya está avanzado, lo ponemos en la estación ANTERIOR 
+            // para que veamos la animación de él caminando a la actual.
+            if (nivelActual > 1) {
+                // -2 porque los arrays de JavaScript empiezan en 0
+                let estAnterior = estaciones[nivelActual - 2]; 
+                player.x = estAnterior.x * canvas.width;
+                player.y = estAnterior.y * canvas.height;
+            } else {
+                // Si es el Nivel 1, lo ponemos cerquita para que dé unos pasos
+                player.x = 0;
+                player.y = estaciones[0].y * canvas.height;
+            }
+            
             empezarViaje = true;
         }
 
@@ -514,13 +537,13 @@ const sesiones = {
     
     if (p === correcta) {
         if (typeof db !== 'undefined') {
-            // ¡Aquí estaba el error! Todo debe ir dentro de las llaves del update
             db.ref('usuarios/' + idUsuario).update({ 
                 nivel: nivelActual + 1,
                 monedas: firebase.database.ServerValue.increment(10),
                 estado_mision: "recompensa"
             }).then(() => {
-                alert("✨ ¡Magia Restaurada con Éxito! Has ganado 10 monedas.🪙");
+                // ELIMINAMOS el alert() aquí para que no congele la pantalla
+                // y deje que la animación del pergamino de monedas fluya libremente.
                 document.getElementById("modal-baul").style.display = 'none';
                 document.getElementById("phrase-input").value = "";
                 misionActiva = false;
