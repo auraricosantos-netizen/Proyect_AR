@@ -13,7 +13,12 @@
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
         body { margin: 0; overflow: hidden; font-family: 'Montserrat', sans-serif; }
         
-        #joystick-zone { position: absolute; bottom: 0; left: 0; width: 100%; height: 50%; z-index: 10; touch-action: none; }
+        #joystick-zone { position: absolute;
+        bottom: 10%;
+        left: 5%;
+        width: 20%;
+        height: 40%;
+        z-index: 10;  }
 
         /* Ficha Informativa Superior */
         #info-card {
@@ -31,7 +36,7 @@
 
         /* Botón Final de Éxito */
         #btn-final {
-            display: none; position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            display: none; position: fixed; bottom: 40px; left: 40%; transform: translateX(-50%);
             background: #000; color: #00f2ff; border: 2px solid #00f2ff; padding: 15px 40px;
             border-radius: 50px; font-weight: bold; cursor: pointer; z-index: 1000;
             font-family: 'Montserrat'; box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
@@ -54,7 +59,7 @@
         ✨ INVESTIGACIÓN COMPLETADA: VOLVER
     </button>
 
-    <div id="joystick-zone"></div>
+    <div id="joystick-zone" mode="static"></div>
 
     <a-scene background="color: #f0f0f0" renderer="antialias: true">
         <a-light type="ambient" intensity="0.8"></a-light>
@@ -66,7 +71,7 @@
         <a-entity id="estaciones-container"></a-entity>
 
         <a-entity id="rig" position="0 0 5">
-            <a-camera id="camera" look-controls="pointerLockEnabled: false"></a-camera>
+            <a-camera id="camera" look-controls="pointerLockEnabled: false" wasd-controls="enabled: false"></a-camera>
         </a-entity>
     </a-scene>
 
