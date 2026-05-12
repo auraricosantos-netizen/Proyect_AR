@@ -11,8 +11,17 @@
         .main-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; width: 100%; padding: 20px; box-sizing: border-box; }
         #landing-section { text-align: center; }
         #landing-section h1 { font-family: 'Orbitron', sans-serif; font-size: 3.5rem; background: linear-gradient(to right, var(--neon-blue), var(--neon-magenta)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 15px rgba(0, 242, 255, 0.4)); margin-bottom: 5px; }
-        .btn-connect { padding: 15px 45px; font-family: 'Orbitron', sans-serif; background: transparent; border: 2px solid var(--neon-blue); color: var(--neon-blue); cursor: pointer; font-size: 1.1rem; clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%); transition: 0.3s; margin-top: 30px; }
+        
+        /* Contenedor para los botones de inicio */
+        .botones-inicio { display: flex; gap: 20px; justify-content: center; margin-top: 30px; flex-wrap: wrap; }
+        
+        .btn-connect { padding: 15px 35px; font-family: 'Orbitron', sans-serif; background: transparent; border: 2px solid var(--neon-blue); color: var(--neon-blue); cursor: pointer; font-size: 1.1rem; clip-path: polygon(10% 0, 100% 0, 90% 100%, 0% 100%); transition: 0.3s; }
         .btn-connect:hover { background: var(--neon-blue); color: black; box-shadow: 0 0 30px var(--neon-blue); }
+        
+        /* Estilo variante para el botón de login */
+        .btn-login { border-color: var(--neon-magenta); color: var(--neon-magenta); }
+        .btn-login:hover { background: var(--neon-magenta); box-shadow: 0 0 30px var(--neon-magenta); }
+
         #selection-section { display: none; width: 100%; max-width: 1200px; text-align: center; }
         .char-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; margin-top: 30px; }
         .char-card { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 20px; padding: 25px; cursor: pointer; transition: 0.4s; display: flex; flex-direction: column; align-items: center; }
@@ -27,7 +36,10 @@
     <div class="main-wrapper">
         <div id="landing-section">
             <h1>PROYECTO AR</h1>
-            <button class="btn-connect" onclick="irASeleccion()">INICIAR SISTEMA</button>
+            <div class="botones-inicio">
+                <button class="btn-connect" onclick="irASeleccion()">NUEVO REGISTRO</button>
+                <button class="btn-connect btn-login" onclick="iniciarSesion()">CONTINUAR PARTIDA</button>
+            </div>
         </div>
 
         <div id="selection-section">
@@ -48,7 +60,7 @@
                     <h3>LUNA</h3>
                     <p>Maestra de portales.</p>
                 </div>
-            <div class="char-card" onclick="crearYEntrar('Nova', '👩‍🔬')">
+                <div class="char-card" onclick="crearYEntrar('Nova', '👩‍🔬')">
                     <div class="emoji-avatar">👩‍🔬</div>
                     <h3>NOVA</h3>
                     <p>Investigadora incansable.</p>
@@ -77,54 +89,82 @@
             document.getElementById('selection-section').style.display = 'block';
         }
 
+        // --- NUEVA FUNCIÓN: INICIAR SESIÓN (LOGIN) ---
+        async function iniciarSesion() {
+            let nombreInput = prompt("Ingresa tu nombre de Restaurador para continuar:", "");
+            
+            if (!nombreInput || nombreInput.trim() === "") {
+                return; // Si cancela o deja vacío, no hace nada
+            }
+
+            const nombre = nombreInput.trim();
+
+            try {
+                // Buscamos si existe alguien con ese nombre
+                const snapshot = await db.ref('usuarios').orderByChild('nombre').equalTo(nombre).once('value');
+                
+                if (snapshot.exists()) {
+                    let idUsuario = "";
+                    // Firebase devuelve un objeto con resultados, sacamos la key (que es el ID: REST-12345...)
+                    snapshot.forEach((childSnapshot) => {
+                        idUsuario = childSnapshot.key;
+                    });
+                    
+                    alert("¡Bienvenido de vuelta, " + nombre + "!");
+                    // Redirigimos al laberinto con su ID existente para recuperar el progreso
+                    window.location.href = "laberinto.html?id=" + idUsuario;
+                } else {
+                    alert("No encontramos ningún Restaurador con el nombre '" + nombre + "'. ¿Seguro que lo escribiste bien o prefieres hacer un Nuevo Registro?");
+                }
+            } catch (error) {
+                console.error("Error al iniciar sesión:", error);
+                alert("Las hadas de la red están distraídas. Inténtalo de nuevo.");
+            }
+        }
+
+        // --- FUNCIÓN EXISTENTE: CREAR USUARIO (REGISTRO) ---
         async function crearYEntrar(personaje, emoji) {
-    // 1. Pedir nombre y limpiar espacios
-    let nombreInput = prompt("¿Cuál es tu nombre de Restaurador?", "");
-    
-    if (!nombreInput || nombreInput.trim() === "") {
-        alert("¡Un Restaurador necesita un nombre para ser recordado en las leyendas!");
-        return;
-    }
+            let nombreInput = prompt("¿Cuál es tu nombre de Restaurador?", "");
+            
+            if (!nombreInput || nombreInput.trim() === "") {
+                alert("¡Un Restaurador necesita un nombre para ser recordado en las leyendas!");
+                return;
+            }
 
-    const nombre = nombreInput.trim();
+            const nombre = nombreInput.trim();
 
-    // 2. Comprobar si el nombre ya existe en Firebase
-    // Usamos 'orderByChild' para buscar si alguien ya tiene ese nombre
-    try {
-        const snapshot = await db.ref('usuarios').orderByChild('nombre').equalTo(nombre).once('value');
-        
-        if (snapshot.exists()) {
-            alert("⚠️ Este nombre ya ha sido reclamado por otro Restaurador. ¡Elige uno que sea único en el bosque!");
-            return; // Detenemos el proceso
+            try {
+                const snapshot = await db.ref('usuarios').orderByChild('nombre').equalTo(nombre).once('value');
+                
+                if (snapshot.exists()) {
+                    alert("⚠️ Este nombre ya ha sido reclamado por otro Restaurador. ¡Elige uno que sea único en el bosque!");
+                    return; 
+                }
+
+                const urlParams = new URLSearchParams(window.location.search);
+                let idUsuario = urlParams.get('id');
+                if (!idUsuario) {
+                    idUsuario = 'REST-' + Date.now(); 
+                }
+
+                db.ref('usuarios/' + idUsuario).set({
+                    nombre: nombre,
+                    personaje: personaje, 
+                    emoji: emoji,         
+                    nivel: 1,             
+                    monedas: 0,           
+                    timestamp: Date.now(),
+                    completado: false,
+                    estado_mision: "espera" 
+                }).then(() => {
+                    window.location.href = "laberinto.html?id=" + idUsuario;
+                });
+
+            } catch (error) {
+                console.error("Error al validar nombre:", error);
+                alert("Las hadas de la red están distraídas. Inténtalo de nuevo.");
+            }
         }
-
-        // 3. Si el nombre es único, procedemos a crear el ID y guardar
-        const urlParams = new URLSearchParams(window.location.search);
-        let idUsuario = urlParams.get('id');
-        if (!idUsuario) {
-            idUsuario = 'REST-' + Date.now(); // ID único basado en tiempo
-        }
-
-        // 4. Guardar todos los datos (incluyendo el avatar seleccionado)
-        db.ref('usuarios/' + idUsuario).set({
-            nombre: nombre,
-            personaje: personaje, // Tipo de avatar (Ej: Guerrero, Mago)
-            emoji: emoji,         // El icono visual
-            nivel: 1,             // Empieza en Villa Raíz
-            monedas: 0,           // Empieza sin tesoros
-            timestamp: Date.now(),
-            completado: false,
-            estado_mision: "espera" // Estado inicial para el laberinto
-        }).then(() => {
-            // 5. Redirigir al laberinto con el ID
-            window.location.href = "laberinto.html?id=" + idUsuario;
-        });
-
-    } catch (error) {
-        console.error("Error al validar nombre:", error);
-        alert("Las hadas de la red están distraídas. Inténtalo de nuevo.");
-    }
-}
     </script>
 </body>
 </html>
