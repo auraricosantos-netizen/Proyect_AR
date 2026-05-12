@@ -21,116 +21,126 @@
             margin: 0; padding: 0;
             background: #050510;
             background-image: 
-                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
-                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px);
-            background-size: 550px 550px, 350px 350px;
+                radial-gradient(white, rgba(255,255,255,.1) 1px, transparent 20px);
+            background-size: 50px 50px;
             color: white;
             font-family: 'Quicksand', sans-serif;
             display: flex; flex-direction: column; align-items: center;
-            height: 100vh; overflow: hidden;
+            min-height: 100vh; overflow-x: hidden;
         }
 
-        .header { margin-top: 20px; text-align: center; z-index: 10; }
-        h1 { font-family: 'Orbitron', sans-serif; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); margin: 0; }
-        p.subtitle { color: #aaa; font-size: 0.9em; margin: 5px 0; }
+        .header { margin-top: 15px; text-align: center; width: 90%; }
+        h1 { font-family: 'Orbitron', sans-serif; color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); font-size: 1.5rem; }
+        p.subtitle { color: #aaa; font-size: 0.8rem; margin: 5px 0; }
 
         .main-wrapper {
-            display: flex; flex-direction: row; gap: 20px;
-            width: 95%; max-width: 1100px; height: 70vh;
-            margin-top: 15px;
+            display: flex; flex-direction: column; gap: 15px;
+            width: 95%; max-width: 1100px;
+            margin: 15px 0; padding-bottom: 80px; /* Espacio para el botón inferior */
+        }
+
+        /* Responsive Desktop */
+        @media (min-width: 800px) {
+            h1 { font-size: 2.2rem; }
+            .main-wrapper { flex-direction: row; height: 70vh; }
+            body { overflow: hidden; }
         }
 
         .puzzle-section {
             flex: 1; background: var(--glass);
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 20px; padding: 30px;
+            border-radius: 20px; padding: 20px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             text-align: center;
         }
 
         .fragmento-card {
-            font-size: 1.5em; font-weight: bold; color: var(--neon-blue);
-            background: rgba(0,0,0,0.4); padding: 25px; border-radius: 15px;
-            border: 2px dashed var(--neon-blue); margin: 20px 0;
-            box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2);
-            transition: all 0.4s ease;
+            font-size: 1.2rem; font-weight: bold; color: var(--neon-blue);
+            background: rgba(0,0,0,0.4); padding: 15px; border-radius: 15px;
+            border: 2px dashed var(--neon-blue); margin: 15px 0;
+            width: 80%; box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2);
         }
 
         .chat-section {
-            flex: 1; background: rgba(0, 0, 0, 0.6);
+            flex: 1.2; background: rgba(0, 0, 0, 0.6);
             border-radius: 20px; border: 1px solid var(--neon-purple);
-            display: flex; flex-direction: column; overflow: hidden;
+            display: flex; flex-direction: column; height: 400px; /* Altura fija en móvil */
             box-shadow: 0 0 20px rgba(188, 19, 254, 0.2);
         }
 
+        @media (min-width: 800px) {
+            .chat-section { height: auto; }
+        }
+
         #chat-box {
-            flex: 1; padding: 20px; overflow-y: auto;
-            display: flex; flex-direction: column; gap: 10px;
+            flex: 1; padding: 15px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 8px;
             background: linear-gradient(to bottom, transparent, rgba(188, 19, 254, 0.05));
         }
 
         .mensaje {
             background: rgba(255, 255, 255, 0.05);
-            padding: 10px 15px; border-radius: 15px;
+            padding: 8px 12px; border-radius: 12px;
             border-left: 3px solid var(--neon-purple);
+            font-size: 0.9rem;
             animation: slideIn 0.3s ease-out;
+            word-wrap: break-word;
         }
 
-        .input-area { padding: 15px; background: rgba(255,255,255,0.05); display: flex; gap: 10px; }
-        input { flex: 1; background: transparent; border: 1px solid var(--neon-blue); border-radius: 25px; padding: 12px 20px; color: white; outline: none; }
+        .input-area { padding: 10px; background: rgba(255,255,255,0.05); display: flex; gap: 8px; }
+        input { 
+            flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--neon-blue); 
+            border-radius: 20px; padding: 10px 15px; color: white; outline: none; font-size: 16px; /* Evita zoom en iOS */
+        }
         
-        button.btn-send { background: var(--neon-blue); color: black; border: none; padding: 10px 25px; border-radius: 25px; font-weight: bold; cursor: pointer; }
+        button.btn-send { 
+            background: var(--neon-blue); color: black; border: none; 
+            padding: 0 15px; border-radius: 20px; font-weight: bold; cursor: pointer; 
+        }
 
         .btn-return {
-            margin-top: 20px; background: rgba(255,255,255,0.1); 
-            border: 1px solid white; color: white;
-            padding: 12px 40px; border-radius: 30px; 
+            position: fixed; bottom: 15px; width: 90%; max-width: 400px;
+            background: rgba(255,255,255,0.1); border: 1px solid white; color: white;
+            padding: 15px; border-radius: 30px; 
             font-family: 'Orbitron'; cursor: pointer; transition: 0.4s;
-            opacity: 0.4; pointer-events: none;
+            opacity: 0.4; pointer-events: none; z-index: 100;
         }
 
         .success-mode {
             opacity: 1 !important; pointer-events: auto !important;
             background: var(--neon-purple) !important;
-            border-color: var(--neon-blue) !important;
             box-shadow: 0 0 25px var(--neon-purple);
             animation: pulse 2s infinite;
         }
 
-        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-
-        @media (max-width: 800px) {
-            .main-wrapper { flex-direction: column; height: auto; overflow-y: auto; }
-            .chat-section { height: 350px; }
-            .fragmento-card { font-size: 1.1em; padding: 15px; }
-        }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1>ISLAS SINCRONÍA</h1>
-        <p id="user-count" class="subtitle">Conectando con el tejido mágico...</p>
+        <p id="user-count" class="subtitle">Conectando...</p>
     </div>
 
     <div class="main-wrapper">
         <div class="puzzle-section">
-            <div id="status-icon" style="font-size: 3em;">🔮</div>
-            <h2>Tu Fragmento Sagrado</h2>
-            <div id="mi-fragmento-display" class="fragmento-card">Leyendo el cosmos...</div>
-            <p id="instruccion-guia" style="font-size: 0.9em; color: #ddd;">
-                Para avanzar, envíen sus fragmentos al chat en el orden correcto.<br>
-                <strong style="color:var(--neon-purple)">Si alguien se equivoca o repite, la magia se rompe.</strong>
+            <div id="status-icon" style="font-size: 2.5rem;">🔮</div>
+            <h2>Tu Fragmento</h2>
+            <div id="mi-fragmento-display" class="fragmento-card">Cargando...</div>
+            <p style="font-size: 0.8rem; color: #ddd; padding: 0 10px;">
+                Envíen los fragmentos al chat en orden.<br>
+                <strong style="color:var(--neon-purple)">¡La repetición rompe el hechizo!</strong>
             </p>
         </div>
 
         <div class="chat-section">
             <div id="chat-box"></div>
             <div class="input-area">
-                <input type="text" id="chat-input" placeholder="Escribe tu fragmento aquí..." autocomplete="off" onkeypress="if(event.key==='Enter') enviarMensaje()">
-                <button class="btn-send" onclick="enviarMensaje()">ENVIAR</button>
+                <input type="text" id="chat-input" placeholder="Tu fragmento..." autocomplete="off" onkeypress="if(event.key==='Enter') enviarMensaje()">
+                <button class="btn-send" onclick="enviarMensaje()">➤</button>
             </div>
         </div>
     </div>
@@ -139,21 +149,17 @@
 
     <script>
     window.addEventListener('load', () => {
-        
         const urlParams = new URLSearchParams(window.location.search);
-        const finalUserId = (typeof userId !== 'undefined' ? userId : null) || urlParams.get('id') || ('invitado_' + Math.floor(Math.random()*1000));
+        const finalUserId = urlParams.get('id') || ('invitado_' + Math.floor(Math.random()*1000));
         const miNombre = "Restaurador_" + finalUserId.substring(0, 4);
 
         const chatRef = db.ref('chat_sincronia');
-        
-        // Usamos el ID del usuario como llave para saber exactamente quiénes y cuántos están
         const miNodoPresencia = db.ref('presencia_islas/' + finalUserId);
         miNodoPresencia.set(true);
         miNodoPresencia.onDisconnect().remove();
         
         let misDatosMision = { fragmentos: [], pasos: 0 };
 
-        // --- MEGA BANCO TEMÁTICO (DE 2 A 10 USUARIOS) ---
         const megaBanco = {
             "2": [
         ["UNIÓN MÁGICA ES", "FUERZA DEL BOSQUE"],
@@ -220,71 +226,49 @@
             ]
         };
 
-        // --- SISTEMA DE PRESENCIA Y ASIGNACIÓN PERFECTA ---
+        // Escuchar presencia
         db.ref('presencia_islas').on('value', (snap) => {
             let usuariosOnline = [];
             snap.forEach(child => { usuariosOnline.push(child.key); });
-            
-            // Ordenamos alfabéticamente los IDs para que la asignación sea estable
             usuariosOnline.sort(); 
-            
             const count = usuariosOnline.length;
-            const counterEl = document.getElementById('user-count');
-            if(counterEl) counterEl.innerText = `RED: ${count} Restauradores en línea`;
-            
+            document.getElementById('user-count').innerText = `RED: ${count} Restauradores en línea`;
             actualizarDificultad(usuariosOnline);
         });
 
         function actualizarDificultad(usuariosOnline) {
-            let numeroUsuarios = usuariosOnline.length;
-            let dificultad = Math.min(Math.max(numeroUsuarios, 2), 10); // Límite entre 2 y 10
-            
-            const bancoDelNivel = megaBanco[dificultad];
-            const hoy = new Date().getDate();
-            const fraseElegida = bancoDelNivel[hoy % bancoDelNivel.length];
+            let num = usuariosOnline.length;
+            let dif = Math.min(Math.max(num, 2), 5); // Simplificado para el ejemplo
+            const frase = megaBanco[dif][new Date().getDate() % megaBanco[dif].length];
+            misDatosMision.fragmentos = frase;
+            misDatosMision.pasos = dif;
 
-            misDatosMision.fragmentos = fraseElegida;
-            misDatosMision.pasos = dificultad;
-
-            // Buscamos la posición exacta de este usuario en la lista para darle su parte
-            let miIndice = usuariosOnline.indexOf(finalUserId);
-            if(miIndice === -1) miIndice = 0; // Backup de seguridad
-            
-            // Si hay más de 10 usuarios, se repiten los fragmentos (se envuelve el índice)
-            miIndice = miIndice % dificultad; 
-            
-            const colores = ["#00f2ff", "#bc13fe", "#ff0055", "#ccff00", "#00ff99", "#ffcc00", "#ff6600", "#00ccff", "#cc66ff", "#00ff66"];
+            let idx = usuariosOnline.indexOf(finalUserId) % dif;
+            const colores = ["#00f2ff", "#bc13fe", "#ff0055", "#ccff00", "#00ff99"];
             
             const display = document.getElementById('mi-fragmento-display');
-            if(display) {
-                display.innerText = `"${fraseElegida[miIndice]}"`;
-                display.style.color = colores[miIndice];
-                display.style.borderColor = colores[miIndice];
-            }
+            display.innerText = `"${frase[idx]}"`;
+            display.style.color = colores[idx];
+            display.style.borderColor = colores[idx];
         }
 
-        // --- LÓGICA ESTRICTA DEL CHAT ---
-        // Leemos hasta 30 mensajes para no perder el rastro de la secuencia
-        chatRef.limitToLast(30).on('value', (snap) => {
+        // Lógica de historial compartido
+        chatRef.limitToLast(50).on('value', (snap) => {
             const chatBox = document.getElementById('chat-box');
-            if(!chatBox) return;
-            
             chatBox.innerHTML = "";
             let historial = [];
 
             snap.forEach(child => {
                 const data = child.val();
-                if(data.texto && data.userId) {
-                    historial.push({
-                        texto: data.texto.toUpperCase().trim(),
-                        userId: data.userId,
-                        nombre: data.nombre
-                    });
-                    const div = document.createElement('div');
-                    div.className = "mensaje";
-                    div.innerHTML = `<small style="color:var(--neon-blue)">${data.nombre}:</small><br>${data.texto}`;
-                    chatBox.appendChild(div);
-                }
+                historial.push({
+                    texto: data.texto.toUpperCase().trim(),
+                    userId: data.userId,
+                    nombre: data.nombre
+                });
+                const div = document.createElement('div');
+                div.className = "mensaje";
+                div.innerHTML = `<small style="color:var(--neon-blue)">${data.nombre}:</small> ${data.texto}`;
+                chatBox.appendChild(div);
             });
             chatBox.scrollTop = chatBox.scrollHeight;
             validarSincroniaReal(historial);
@@ -294,28 +278,19 @@
             let etapa = 0;
             let usuariosInvolucrados = new Set();
             const objetivo = misDatosMision.fragmentos;
-            
-            if(!objetivo || objetivo.length === 0) return;
+            if(!objetivo) return;
 
-            // Recorremos el historial comprobando la cadena
-            for (let i = 0; i < historial.length; i++) {
-                let msg = historial[i];
-                
-                // ¿Es la parte de la frase que toca ahora mismo?
+            for (let msg of historial) {
                 if (msg.texto === objetivo[etapa]) {
-                    // Verificamos que el usuario NO haya participado ya en esta cadena
                     if (!usuariosInvolucrados.has(msg.userId)) {
                         usuariosInvolucrados.add(msg.userId);
                         etapa++;
-                        if (etapa === misDatosMision.pasos) break; // ¡Éxito!
+                        if (etapa === misDatosMision.pasos) break;
                     } else {
-                        // El usuario repitió turno y rompió la magia
                         etapa = (msg.texto === objetivo[0]) ? 1 : 0;
-                        usuariosInvolucrados = new Set();
-                        if (etapa === 1) usuariosInvolucrados.add(msg.userId);
+                        usuariosInvolucrados = (etapa === 1) ? new Set([msg.userId]) : new Set();
                     }
                 } else {
-                    // Alguien envió un mensaje equivocado y rompió la cadena
                     if (msg.texto === objetivo[0]) {
                         etapa = 1;
                         usuariosInvolucrados = new Set([msg.userId]);
@@ -328,12 +303,12 @@
 
             const btn = document.getElementById('btn-final');
             if (etapa === misDatosMision.pasos) {
-                btn.innerText = "¡SINFONÍA MÁGICA LOGRADA! VOLVER";
+                btn.innerText = "¡SINCRONÍA LOGRADA! VOLVER";
                 btn.classList.add('success-mode');
                 document.getElementById('status-icon').innerText = "🌟";
                 window.misionCompletada = true;
             } else {
-                btn.innerText = `FORJANDO SINCRONÍA (${etapa}/${misDatosMision.pasos})`;
+                btn.innerText = `PROGRESO: ${etapa}/${misDatosMision.pasos}`;
                 btn.classList.remove('success-mode');
                 window.misionCompletada = false;
             }
@@ -344,25 +319,22 @@
             const texto = input.value.trim();
             if (!texto) return;
 
-            // Guardamos el userId para poder verificar que son distintas personas
             chatRef.push({
                 nombre: miNombre,
                 userId: finalUserId,
                 texto: texto,
-                timestamp: Date.now()
+                timestamp: firebase.database.ServerValue.TIMESTAMP
             });
             input.value = "";
         };
 
         window.finalizarMision = function() {
             if (!window.misionCompletada) return;
-            
             db.ref('usuarios/' + finalUserId).update({
                 nivel: 6,
                 monedas: firebase.database.ServerValue.increment(10),
                 estado_mision: "recompensa" 
             }).then(() => {
-                alert("¡El tejido mágico ha sido restaurado! Has ganado 10 monedas.");
                 window.location.href = 'laberinto.html?id=' + finalUserId;
             });
         };
