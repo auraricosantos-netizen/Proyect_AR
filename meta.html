@@ -28,6 +28,7 @@
         }
 
         #magic-panel {
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
             position: fixed; top: 0; right: -400px; width: 350px; height: 100%;
             background: rgba(10, 20, 40, 0.9); backdrop-filter: blur(15px);
             border-left: 4px solid #00f0ff; display: flex; flex-direction: column;
@@ -75,7 +76,7 @@
         </a-entity>
 
         <a-entity id="rig" position="0 0 5">
-            <a-camera id="camera" look-controls="pointerLockEnabled: false"></a-camera>
+            <a-camera id="camera" look-controls="pointerLockEnabled: false" wasd-controls="enabled: false"></a-camera>
         </a-entity>
     </a-scene>
 
@@ -85,13 +86,13 @@
         let ultimoCuboLeido = null;
 
         const hitosdesabiduria = [
-            "La imaginación es el taller donde se forja el futuro del aprendizaje.",
-            "Un Restaurador no solo mira, imagina mundos que otros no ven.",
-            "La mente es un lienzo infinito donde cada pensamiento es realidad.",
-            "Cerrar los ojos es abrir las puertas a dimensiones posibles.",
-            "La verdadera magia convierte un 'imposible' en un 'todavía no'.",
-            "Donde termina el conocimiento, comienza la imaginación.",
-            "Tu mente es el único laboratorio sin límites de este reino."
+            " La imaginación es el taller donde se forja el futuro del aprendizaje. ",
+            " Un Restaurador no solo mira, imagina mundos que otros no ven. ",
+            " La mente es un lienzo infinito donde cada pensamiento es realidad. ",
+            " Cerrar los ojos es abrir las puertas a dimensiones posibles. ",
+            " La verdadera magia convierte un 'imposible' en un 'todavía no'. ",
+            " Donde termina el conocimiento, comienza la imaginación. ",
+            " Tu mente es el único laboratorio sin límites de este reino. "
         ];
 
         window.onload = () => {
